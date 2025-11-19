@@ -1,5 +1,7 @@
 # Python
 __pycache__/
+*/__pycache__/
+**/__pycache__/
 *.py[cod]
 *$py.class
 *.so
@@ -40,20 +42,34 @@ env/
 
 # Jupyter Notebook
 .ipynb_checkpoints
+**/.ipynb_checkpoints
+*/.ipynb_checkpoints/
 
 # Data - Keep sample data, ignore large datasets
 data/imdb/
+data/imdb/**
 data/snips/
+data/snips/**
 data/banking77/
+data/banking77/**
 data/wikitext/
+data/wikitext/**
 *.csv
 *.tsv
 *.parquet
 
-# Keep sample data directories
+# Keep sample data directories (whitelist)
 !data/intent_samples/
+!data/intent_samples/**
 !data/sentiment_samples/
+!data/sentiment_samples/**
 !data/text_gen_samples/
+!data/text_gen_samples/**
+
+# Ignore generated plots in notebooks (optional - comment out if you want to keep them)
+notebooks/*.png
+notebooks/*.jpg
+notebooks/*.svg
 
 # Models
 trained_models/
