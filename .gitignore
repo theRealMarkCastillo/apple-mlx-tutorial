@@ -40,7 +40,6 @@ env/
 
 # Jupyter Notebook
 .ipynb_checkpoints
-*.ipynb
 
 # Data - Keep sample data, ignore large datasets
 data/imdb/
