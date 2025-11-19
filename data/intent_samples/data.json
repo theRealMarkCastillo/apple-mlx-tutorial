@@ -1,0 +1,24 @@
+{
+  "texts": [
+    "hello there",
+    "hi how are you",
+    "good morning",
+    "what time is it",
+    "when is the meeting",
+    "how do I do this",
+    "please turn on the lights",
+    "start the music",
+    "open the door"
+  ],
+  "labels": [
+    "greeting",
+    "greeting",
+    "greeting",
+    "question",
+    "question",
+    "question",
+    "command",
+    "command",
+    "command"
+  ]
+}

@@ -1,0 +1,100 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environment
+.venv/
+venv/
+ENV/
+env/
+.virtualenv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb
+
+# Data - Keep sample data, ignore large datasets
+data/imdb/
+data/snips/
+data/banking77/
+data/wikitext/
+*.csv
+*.tsv
+*.parquet
+
+# Keep sample data directories
+!data/intent_samples/
+!data/sentiment_samples/
+!data/text_gen_samples/
+
+# Models
+trained_models/
+*.npz
+*.safetensors
+*.pt
+*.pth
+*.ckpt
+checkpoints/
+models/
+
+# Logs
+*.log
+logs/
+tensorboard/
+wandb/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+Thumbs.db
+
+# Backup files
+*_old.py
+*_backup.py
+*.bak
+
+# Environment variables
+.env
+.env.local
+
+# MLX specific
+*.npy
+*.metal

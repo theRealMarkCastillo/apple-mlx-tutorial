@@ -1,0 +1,22 @@
+{
+  "texts": [
+    "This movie was absolutely fantastic!",
+    "I loved every minute of it",
+    "Best film I've seen this year",
+    "Terrible waste of time",
+    "Very disappointed with this product",
+    "Would not recommend",
+    "It was okay, nothing special",
+    "Average movie, not bad not great"
+  ],
+  "labels": [
+    "positive",
+    "positive",
+    "positive",
+    "negative",
+    "negative",
+    "negative",
+    "neutral",
+    "neutral"
+  ]
+}
