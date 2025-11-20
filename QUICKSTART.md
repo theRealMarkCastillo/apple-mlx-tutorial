@@ -6,41 +6,37 @@
 # Activate environment
 source .venv/bin/activate
 
-# Download sample datasets (< 1 second)
-python scripts/download_datasets.py --samples
+# Start Jupyter notebooks
+cd notebooks
+jupyter notebook
 
-# Run interactive examples with real data
-python examples_with_real_data.py
-
-# Or quick demo with built-in data
-python quick_demo.py
-
-# Full menu
-python main.py
+# Open 00_Overview.ipynb to get started!
 ```
 
 ## 📚 What's Inside
 
-### 1. **Intent Classification** (`intent_classifier.py`)
-Classifies user input into: greeting, question, or command
+All functionality is now in interactive Jupyter notebooks:
+
+### 1. **Intent Classification** 
+Learn to classify user input into: greeting, question, or command
+- **Notebook**: `01_Intent_Classification.ipynb`
 - **Sample data**: 9 examples for quick testing
 - **Real datasets**: SNIPS (16K+), Banking77 (13K)
-- LSTM-based architecture
-- Interactive mode included
+- LSTM-based architecture with full explanations
 
-### 2. **Sentiment Analysis** (`sentiment_analysis.py`)
-Detects sentiment: positive or negative
+### 2. **Sentiment Analysis**
+Detect sentiment: positive, negative, or neutral
+- **Notebook**: `02_Sentiment_Analysis.ipynb`
 - **Sample data**: 8 reviews for quick testing
 - **Real dataset**: IMDB movie reviews (50K)
-- Returns probability distributions
-- Great for customer feedback
+- Returns probability distributions with visualizations
 
-### 3. **Text Generation** (`text_generator.py`)
-Generates text and suggests completions
+### 3. **Text Generation**
+Generate text and suggest completions
+- **Notebook**: `03_Text_Generation.ipynb`
 - **Sample data**: Small corpus for testing
 - **Real dataset**: WikiText-2 (36K articles)
-- Temperature-controlled sampling
-- Autocomplete functionality
+- Temperature-controlled sampling with examples
 
 ## 🎯 Common Tasks
 
@@ -56,53 +52,35 @@ python scripts/download_datasets.py --all
 python scripts/download_datasets.py --imdb     # 50K reviews
 python scripts/download_datasets.py --snips    # 16K+ intents
 python scripts/download_datasets.py --wikitext # 36K articles
-
-# Shell script
-./scripts/download_datasets.sh
 ```
 
 ### Train with Real Data
+All training is done in Jupyter notebooks:
+
 ```bash
-# Interactive examples (6 scenarios)
-python examples_with_real_data.py
+# Start notebooks
+cd notebooks
+jupyter notebook
 
-# Standalone training
-python train_intent_classifier.py --data data/snips --epochs 40
-
-# Production pipeline
-python production_example.py
+# Open the notebook for your task:
+# - 01_Intent_Classification.ipynb
+# - 02_Sentiment_Analysis.ipynb  
+# - 03_Text_Generation.ipynb
 ```
 
-### Run a Quick Demo
-```bash
-python quick_demo.py
-```
-
-### Run Specific Model
-```bash
-python main.py intent      # Intent classification
-python main.py sentiment   # Sentiment analysis
-python main.py text        # Text generation
-```
-
-### Use in Your Code
-```python
-# See examples.py for full examples
-from intent_classifier import predict_intent
-
-# Train your model...
-intent, confidence = predict_intent(model, "Hello", vocab, names, max_len)
-```
+Each notebook includes:
+- Data loading and preprocessing
+- Model training with visualizations
+- Evaluation and testing
+- Interactive predictions
 
 ## 🛠️ Customization
 
 ### Add More Training Data
-Edit the training data in each file:
-- `intent_classifier.py` - Add to `sentences` and `intent_labels`
-- `sentiment_analysis.py` - Add to `sentences` and `sentiment_labels`
-- `text_generator.py` - Add to `texts` list
+Add data directly in the notebooks by modifying the data loading cells.
 
 ### Adjust Model Parameters
+In the notebook cells, modify parameters like:
 ```python
 # Larger model for better accuracy
 model = IntentClassifier(
@@ -114,6 +92,7 @@ model = IntentClassifier(
 ```
 
 ### Training Options
+Adjust training in the notebook cells:
 ```python
 # Train longer or with different learning rate
 model = train_model(
@@ -171,29 +150,26 @@ pip install mlx numpy scikit-learn
 ## 📝 File Structure
 
 ```
-Main Scripts:
-- main.py              → Run everything
-- quick_demo.py        → Fast test
-- examples.py          → Code examples
+Main Resources:
+- notebooks/              → All interactive notebooks
+- notebooks/mlx_nlp_utils.py → Model implementations
+- scripts/                → Dataset downloaders
+- data/                   → Downloaded datasets
 
-Models:
-- intent_classifier.py
-- sentiment_analysis.py
-- text_generator.py
-
-Utilities:
-- run.sh              → Quick start
-- requirements.txt    → Dependencies
-- README.md           → Full docs
+Documentation:
+- README.md              → Full documentation
+- QUICKSTART.md          → This file
+- TRAINING_GUIDE.md      → Training workflows
+- PRODUCTION_README.md   → Deployment guide
 ```
 
 ## 🎓 Learning Path
 
-1. **Start here:** `python quick_demo.py`
-2. **Try each model:** `python main.py`
-3. **Learn the code:** Read `examples.py`
-4. **Customize:** Edit training data
-5. **Build:** Use models in your own project
+1. **Start here:** `cd notebooks && jupyter notebook`
+2. **Open:** `00_Overview.ipynb` for quick intro
+3. **Learn:** Work through notebooks 01-04 in order
+4. **Customize:** Modify notebooks for your needs
+5. **Build:** Use `notebooks/mlx_nlp_utils.py` as reference
 
 ## 💡 Use Cases
 
@@ -212,22 +188,21 @@ Utilities:
 
 ## 🚀 Next Steps
 
-1. **Expand training data** - Add domain-specific examples
-2. **Fine-tune models** - Adjust hyperparameters
-3. **Combine models** - Build complete chatbot
-4. **Deploy to iOS** - Convert to Core ML
-5. **Add features** - NER, Q&A, translation
+1. **Learn with notebooks** - Interactive tutorials with visualizations
+2. **Download datasets** - Try with real data (IMDB, SNIPS, WikiText)
+3. **Fine-tune models** - Adjust hyperparameters in notebooks
+4. **Build your project** - Use notebook code as reference
+5. **Deploy** - Convert to Core ML or REST API
 
 ## 📖 Resources
 
-- MLX Documentation: https://ml-explore.github.io/mlx/
-- Apple Silicon ML: https://developer.apple.com/machine-learning/
-- This project: README.md for full documentation
+- **Notebooks README**: `notebooks/README.md` - Complete learning guide
+- **Training Guide**: `TRAINING_GUIDE.md` - Training workflows
+- **Main README**: `README.md` - Full documentation
+- **MLX Docs**: https://ml-explore.github.io/mlx/
 
 ---
 
-**Quick Start:** `python quick_demo.py`  
-**Full Experience:** `python main.py`  
-**Learn More:** `python examples.py`
+**Quick Start:** `cd notebooks && jupyter notebook` (open `00_Overview.ipynb`)
 
 Happy coding! 🎉

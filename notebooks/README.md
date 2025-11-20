@@ -175,9 +175,9 @@ jupyter notebook
 - `../README.md` - Project overview
 
 ### Code Examples
-- `../examples_with_real_data.py` - Interactive examples
-- `../production_example.py` - Production pipeline (650 lines)
-- `../train_intent_classifier.py` - Standalone training
+- `mlx_nlp_utils.py` - Consolidated model implementations
+- `04_Complete_Pipeline.ipynb` - Full production pipeline
+- `01_Intent_Classification.ipynb` - Training examples
 
 ### Datasets
 - `../data/intent_samples/` - Sample intent data

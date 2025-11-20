@@ -1,38 +1,40 @@
 # Training Scripts with Real Data
 
-This directory contains scripts to download datasets and train models on real data.
+All training is now done through interactive Jupyter notebooks with rich visualizations and explanations.
 
 ## 🚀 Quick Start
 
-### Step 1: Download Sample Data
+### Step 1: Download Data
 
 ```bash
 # Python script
 python scripts/download_datasets.py --samples
 
-# Or shell script
-./scripts/download_datasets.sh --samples
+# For all datasets
+python scripts/download_datasets.py --all
 ```
 
-This creates small sample datasets for quick testing (~30 examples total).
-
-### Step 2: Run Examples
+### Step 2: Launch Notebooks
 
 ```bash
-python examples_with_real_data.py
+cd notebooks
+jupyter notebook
 ```
-
-Choose from the menu to run different examples with real data.
 
 ### Step 3: Train Models
 
-```bash
-# Train intent classifier
-python train_intent_classifier.py
+Open the appropriate notebook:
+- `01_Intent_Classification.ipynb` - For intent classification
+- `02_Sentiment_Analysis.ipynb` - For sentiment analysis
+- `03_Text_Generation.ipynb` - For text generation
+- `04_Complete_Pipeline.ipynb` - For complete chatbot
 
-# Train on specific data
-python train_intent_classifier.py --data data/snips --epochs 50
-```
+Each notebook includes:
+- Dataset loading and exploration
+- Data preprocessing and cleaning
+- Model training with progress tracking
+- Evaluation with metrics and visualizations
+- Interactive predictions
 
 ## 📊 Available Datasets
 
@@ -73,14 +75,15 @@ python scripts/download_datasets.py --all
 # 1. Download samples
 python scripts/download_datasets.py --samples
 
-# 2. Train intent classifier
-python train_intent_classifier.py
+# 2. Start notebooks
+cd notebooks
+jupyter notebook
 
-# 3. See results
-# Model saved to: trained_models/intent_classifier.npz
+# 3. Open 01_Intent_Classification.ipynb
+# 4. Run cells to load data and train
 ```
 
-**Expected output:**
+**Expected output in notebook:**
 ```
 Loaded 9 examples
 Intents: ['command', 'greeting', 'question']
@@ -90,8 +93,8 @@ Epoch      Loss         Accuracy
 1          1.0987       0.33
 5          0.5432       0.67
 10         0.2345       0.89
-...
-✓ Training complete!
+[Training curves visualization displayed]
+[Confusion matrix heatmap displayed]
 ```
 
 ### Example 2: Train on SNIPS Data
@@ -100,65 +103,28 @@ Epoch      Loss         Accuracy
 # 1. Download SNIPS dataset
 python scripts/download_datasets.py --snips
 
-# 2. Train with custom parameters
-python train_intent_classifier.py \
-    --data data/snips \
-    --epochs 50 \
-    --batch-size 32 \
-    --learning-rate 0.001
+# 2. Start notebooks and open 01_Intent_Classification.ipynb
+cd notebooks
+jupyter notebook
 
-# 3. Test the model
-# See predictions on test examples
+# 3. Follow notebook instructions to:
+#    - Load SNIPS data
+#    - Train with custom parameters
+#    - Visualize results
+#    - Test predictions
 ```
 
-**Dataset info:**
-- ~30 examples total (6 intents)
-- Intents: PlayMusic, GetWeather, BookRestaurant, etc.
-- Training time: ~2 minutes on M1 Mac
-
-### Example 3: Run All Examples
+### Example 3: IMDB Sentiment Analysis
 
 ```bash
-# 1. Download all sample data
-python scripts/download_datasets.py --samples
-
-# 2. Run examples script
-python examples_with_real_data.py
-
-# 3. Choose option 7 (Run all examples)
-# This will:
-#   - Train intent classifier
-#   - Train sentiment analyzer
-#   - Train text generator
-#   - Show predictions
-```
-
-### Example 4: IMDB Sentiment Analysis
-
-```bash
-# 1. Download IMDB data (may take 30 seconds)
+# 1. Download IMDB data
 python scripts/download_datasets.py --imdb
 
-# 2. Run IMDB example
-python examples_with_real_data.py
-# Choose option 4
+# 2. Start notebooks and open 02_Sentiment_Analysis.ipynb
+cd notebooks
+jupyter notebook
 
-# This trains on 1,000 IMDB reviews
-# Full 25K training takes ~1-2 hours
-```
-
-### Example 5: Production Training
-
-```bash
-# Use the full production pipeline
-python production_example.py
-
-# This:
-# - Downloads IMDB automatically
-# - Cleans and preprocesses
-# - Trains production model
-# - Evaluates comprehensively
-# - Saves versioned model
+# 3. Train on IMDB reviews with visualizations
 ```
 
 ## 📁 Data Directory Structure
@@ -188,30 +154,36 @@ data/
     └── test.txt               # WikiText test
 ```
 
-## 🔧 Training Script Options
+## 🔧 Training Configuration
 
-### Intent Classifier
+All training parameters are configured in the notebook cells:
 
-```bash
-python train_intent_classifier.py \
-    --data data/snips \              # Data path
-    --epochs 50 \                    # Number of epochs
-    --batch-size 32 \                # Batch size
-    --learning-rate 0.001 \          # Learning rate
-    --vocab-size 5000 \              # Max vocabulary size
-    --max-len 20                     # Max sequence length
+### Model Parameters
+
+```python
+# In notebook cells, modify:
+config = {
+    'vocab_size': 5000,       # Max vocabulary size
+    'embedding_dim': 128,     # Embedding dimension
+    'hidden_dim': 256,        # LSTM hidden size
+    'dropout': 0.3,           # Dropout rate
+    'epochs': 50,             # Training epochs
+    'batch_size': 32,         # Batch size
+    'learning_rate': 0.001    # Learning rate
+}
 ```
 
-### Common Training Parameters
+### Common Parameters
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `--data` | `data/intent_samples/data.json` | Path to training data |
-| `--epochs` | 30 | Number of training epochs |
-| `--batch-size` | 16 | Mini-batch size |
-| `--learning-rate` | 0.01 | Optimizer learning rate |
-| `--vocab-size` | 1000 | Maximum vocabulary size |
-| `--max-len` | 20 | Maximum sequence length |
+| `vocab_size` | 1000-5000 | Maximum vocabulary size |
+| `embedding_dim` | 32-128 | Embedding dimension |
+| `hidden_dim` | 64-256 | LSTM hidden size |
+| `dropout` | 0.3 | Dropout rate (0-0.5) |
+| `epochs` | 30-100 | Number of training epochs |
+| `batch_size` | 16-64 | Mini-batch size |
+| `learning_rate` | 0.001-0.01 | Optimizer learning rate |
 
 ## 📊 Expected Results
 
@@ -226,37 +198,31 @@ Test examples:
   'hello how are you' → greeting
   'what time is it' → question
   'please turn on the lights' → command
+
+[Rich visualizations in notebook]
 ```
 
 ### Intent Classification (SNIPS Data)
 
 ```
-Dataset: 30 examples, 6 intents
+Dataset: 16K+ examples, 7 intents
 Training: 50 epochs, ~2 minutes
-Final Accuracy: 70-85%
+Final Accuracy: 85-95%
 
 Intents: PlayMusic, GetWeather, BookRestaurant,
          SearchCreativeWork, AddToPlaylist, RateBook
+
+[Training curves, confusion matrix, and more]
 ```
 
-### Sentiment Analysis (Sample Data)
+### Sentiment Analysis (IMDB Data)
 
 ```
-Dataset: 8 examples, 3 sentiments
-Training: 50 epochs, ~5 seconds
-Final Accuracy: 85-100%
+Dataset: 50K examples, 2 sentiments
+Training: 20 epochs, ~30 minutes
+Final Accuracy: 88-92%
 
-Sentiments: positive, negative, neutral
-```
-
-### Sentiment Analysis (IMDB Subset)
-
-```
-Dataset: 1,000 examples, 2 sentiments
-Training: 20 epochs, ~5 minutes
-Final Accuracy: 75-85%
-
-Full 25K dataset: ~90% accuracy, ~1-2 hours training
+[Word clouds, ROC curves, confidence plots]
 ```
 
 ## 🎓 Learning Path
@@ -264,28 +230,26 @@ Full 25K dataset: ~90% accuracy, ~1-2 hours training
 ### Beginner: Sample Data
 
 1. Download samples: `python scripts/download_datasets.py --samples`
-2. Run examples: `python examples_with_real_data.py`
-3. Try option 1, 2, 3, and 6
-4. Understand the flow: load → train → predict
+2. Start notebooks: `cd notebooks && jupyter notebook`
+3. Open `00_Overview.ipynb` for quick intro
+4. Work through `01_Intent_Classification.ipynb`
+5. Understand: load → train → predict → visualize
 
 ### Intermediate: Real Datasets
 
 1. Download SNIPS: `python scripts/download_datasets.py --snips`
-2. Train intent: `python train_intent_classifier.py --data data/snips`
-3. Experiment with parameters (epochs, batch size, learning rate)
-4. Understand training curves and accuracy
+2. Open `01_Intent_Classification.ipynb`
+3. Load SNIPS data in notebook
+4. Experiment with parameters (epochs, batch size, learning rate)
+5. Analyze training curves and accuracy
 
 ### Advanced: Production Scale
 
-1. Download IMDB: `python scripts/download_datasets.py --imdb`
-2. Run production: `python production_example.py`
-3. Study the full pipeline:
-   - Data cleaning
-   - Quality filtering
-   - Vocabulary building
-   - Train/val/test splits
-   - Model versioning
-   - Comprehensive evaluation
+1. Download all datasets: `python scripts/download_datasets.py --all`
+2. Work through all notebooks (01-04)
+3. Train on full IMDB dataset (50K samples)
+4. Study the complete pipeline in `04_Complete_Pipeline.ipynb`
+5. Understand data cleaning, model versioning, evaluation
 
 ## 🐛 Troubleshooting
 
@@ -304,32 +268,29 @@ python scripts/download_datasets.py --samples
 
 ### "Out of memory"
 
-Reduce batch size:
-```bash
-python train_intent_classifier.py --batch-size 8
+In notebook cells, reduce batch size:
+```python
+config['batch_size'] = 8
 ```
 
 ### "Training too slow"
 
-Reduce dataset size or use sample data:
-```bash
-# Use first 1000 examples
-python scripts/download_datasets.py --imdb --max-samples 1000
-```
+Reduce dataset size in notebook or use sample data
 
 ### "Poor accuracy"
 
-Try:
-- More epochs: `--epochs 100`
-- Larger model: Edit script to increase `hidden_dim`
+Try in notebook cells:
+- More epochs: `config['epochs'] = 100`
+- Larger model: `config['hidden_dim'] = 512`
 - More data: Download full datasets
-- Better preprocessing: See `docs/DATASETS_AND_PREPROCESSING.md`
+- Check visualizations for insights
 
 ## 📚 Documentation
 
-- **[DATASETS_AND_PREPROCESSING.md](../docs/DATASETS_AND_PREPROCESSING.md)** - Complete data guide
-- **[PRODUCTION_BEST_PRACTICES.md](../docs/PRODUCTION_BEST_PRACTICES.md)** - Deployment guide
-- **[PRODUCTION_README.md](../PRODUCTION_README.md)** - Production setup
+- **[notebooks/README.md](notebooks/README.md)** - Complete notebook guide with learning paths
+- **[README.md](README.md)** - Project overview and setup
+- **[QUICKSTART.md](QUICKSTART.md)** - Quick reference guide
+- **[PRODUCTION_README.md](PRODUCTION_README.md)** - Deployment information
 
 ## 🔄 Workflow
 
@@ -338,44 +299,38 @@ Try:
    ↓
    python scripts/download_datasets.py --samples
 
-2. Explore Examples
+2. Launch Notebooks
    ↓
-   python examples_with_real_data.py
+   cd notebooks && jupyter notebook
 
 3. Train Models
    ↓
-   python train_intent_classifier.py
+   Open and run notebook cells
 
 4. Evaluate & Iterate
    ↓
-   Adjust parameters, try different data
+   Adjust parameters, visualize results
 
-5. Production Deploy
+5. Deploy
    ↓
-   python production_example.py
-   Deploy with REST API
+   Export models for production use
 ```
 
 ## ⚡ Quick Reference
 
 ```bash
-# Most common commands
-
 # Get started (30 seconds)
 python scripts/download_datasets.py --samples
-python examples_with_real_data.py
+cd notebooks && jupyter notebook
 
-# Train intent classifier (2 minutes)
-python scripts/download_datasets.py --snips
-python train_intent_classifier.py --data data/snips
+# Train intent classifier
+# Open 01_Intent_Classification.ipynb in Jupyter
 
-# Production sentiment (30 minutes)
-python scripts/download_datasets.py --imdb --max-samples 5000
-python production_example.py
+# Train sentiment analyzer  
+# Open 02_Sentiment_Analysis.ipynb in Jupyter
 
-# Full pipeline (2 hours)
-python scripts/download_datasets.py --all
-python production_example.py  # Uses full IMDB dataset
+# Complete pipeline
+# Open 04_Complete_Pipeline.ipynb in Jupyter
 ```
 
 ---

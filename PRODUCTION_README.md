@@ -17,11 +17,14 @@ pip install datasets
 ### 2. Run Production Example
 
 ```bash
-# Full pipeline: Download IMDB, train, evaluate, save model
-python production_example.py
+# Start Jupyter notebooks
+cd notebooks
+jupyter notebook
+
+# Open 04_Complete_Pipeline.ipynb
 ```
 
-This will:
+This notebook demonstrates the full production pipeline:
 - Download 5,000 IMDB movie reviews
 - Clean and preprocess the data
 - Build vocabulary
@@ -75,7 +78,7 @@ See the comprehensive guides in `docs/`:
 ### Change Dataset Size
 
 ```python
-# In production_example.py, modify:
+# In the notebook data loading cell:
 train_texts, train_labels, test_texts, test_labels = load_and_clean_imdb(
     max_samples=25000  # Change this number
 )
@@ -84,7 +87,7 @@ train_texts, train_labels, test_texts, test_labels = load_and_clean_imdb(
 ### Change Model Architecture
 
 ```python
-# Modify config in main():
+# Modify config dictionary in the notebook:
 config = {
     'vocab_size': 10000,      # Larger vocabulary
     'embedding_dim': 256,     # Bigger embeddings
@@ -97,7 +100,7 @@ config = {
 ### Use Different Dataset
 
 ```python
-# Replace load_and_clean_imdb() with:
+# Replace load_and_clean_imdb() in the notebook with:
 from datasets import load_dataset
 
 # For Amazon reviews:
@@ -135,15 +138,14 @@ With full IMDB dataset (25K samples, 10 epochs):
 
 ### 1. Train Full Model
 
-```bash
-# Edit production_example.py to use max_samples=25000
-python production_example.py
-```
+Run the `04_Complete_Pipeline.ipynb` notebook with `max_samples=25000` to train on the full dataset. The notebook will save the model to the `production_models/` directory.
 
 ### 2. Load and Serve Model
 
+You can use the `mlx_nlp_utils.py` module to load and serve the model:
+
 ```python
-from production_example import SentimentPredictor, SentimentClassifier, Tokenizer
+from notebooks.mlx_nlp_utils import SentimentPredictor, SentimentClassifier, Tokenizer
 import mlx.core as mx
 
 # Load model
@@ -168,17 +170,16 @@ print(result)
 See `docs/PRODUCTION_BEST_PRACTICES.md` for complete REST API server code.
 
 ```python
-from production_example import serve_model
+# Example using FastAPI
+from fastapi import FastAPI
+from notebooks.mlx_nlp_utils import SentimentPredictor
 
-# Start server on port 8000
-serve_model(predictor, host='0.0.0.0', port=8000)
-```
+app = FastAPI()
+# ... setup predictor ...
 
-Test with curl:
-```bash
-curl -X POST http://localhost:8000/predict \
-  -H "Content-Type: application/json" \
-  -d '{"text": "This product is great!"}'
+@app.post("/predict")
+async def predict(text: str):
+    return predictor.predict(text)
 ```
 
 ### 4. Docker Deployment
@@ -189,33 +190,35 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install -r requirements.txt
 COPY production_models/ ./production_models/
-COPY production_example.py .
-CMD ["python", "production_example.py", "--serve"]
-```
-
-```bash
-docker build -t nlp-sentiment:latest .
-docker run -p 8000:8000 nlp-sentiment:latest
+COPY notebooks/mlx_nlp_utils.py .
+COPY app.py .
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
 ```
 
 ## 🧪 Running Experiments
 
 ### Hyperparameter Search
 
-```python
-from production_example import main, config
+You can use Python loops in the notebook to run grid searches:
 
-# Grid search over learning rates
-for lr in [0.0001, 0.001, 0.01]:
-    config['learning_rate'] = lr
+```python
+# In a notebook cell:
+learning_rates = [0.0001, 0.001, 0.01]
+results = []
+
+for lr in learning_rates:
     print(f"\n=== Training with LR={lr} ===")
-    main()  # Will save model with metrics
+    config['learning_rate'] = lr
+    # ... run training function ...
+    # ... append metrics to results ...
 ```
 
 ### Compare Model Versions
 
+The `mlx_nlp_utils.py` module includes versioning tools:
+
 ```python
-from production_example import ModelVersioning
+from notebooks.mlx_nlp_utils import ModelVersioning
 
 versioning = ModelVersioning()
 
@@ -267,7 +270,7 @@ print(f"Accuracy: {best['metrics']['accuracy']:.2%}")
 ## 🆘 Troubleshooting
 
 **Out of memory during training?**
-- Reduce batch_size: `config['batch_size'] = 16`
+- Reduce batch_size in notebook config: `config['batch_size'] = 16`
 - Reduce model size: `config['hidden_dim'] = 128`
 
 **Training too slow?**

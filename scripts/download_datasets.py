@@ -449,9 +449,9 @@ def main():
                 print(f"  • {subdir.name}/ ({len(files)} files)")
     
     print("\nNext steps:")
-    print("  1. Run examples: python examples_with_real_data.py")
-    print("  2. Train models: python train_with_real_data.py")
-    print("  3. See documentation: docs/DATASETS_AND_PREPROCESSING.md")
+    print("  1. Start notebooks: cd notebooks && jupyter notebook")
+    print("  2. Open 00_Overview.ipynb to get started")
+    print("  3. See notebooks/README.md for learning paths")
 
 
 if __name__ == "__main__":

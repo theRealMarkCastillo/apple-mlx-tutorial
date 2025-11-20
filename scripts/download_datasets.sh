@@ -72,9 +72,9 @@ if [ $? -eq 0 ]; then
     
     echo ""
     echo "Next steps:"
-    echo "  1. Run examples: python examples_with_real_data.py"
-    echo "  2. Train models: python train_intent_classifier.py --data data/snips"
-    echo "  3. See docs: docs/DATASETS_AND_PREPROCESSING.md"
+    echo "  1. Start notebooks: cd notebooks && jupyter notebook"
+    echo "  2. Open 00_Overview.ipynb to get started"
+    echo "  3. See notebooks/README.md for learning paths"
 else
     echo -e "${RED}✗ Download failed${NC}"
     exit 1

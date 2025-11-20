@@ -1,0 +1,7 @@
+{"messages": [{"role": "user", "content": "Classify the intent of this text: 'hello there'"}, {"role": "assistant", "content": "intent: greeting"}]}
+{"messages": [{"role": "user", "content": "Classify the intent of this text: 'hi how are you'"}, {"role": "assistant", "content": "intent: greeting"}]}
+{"messages": [{"role": "user", "content": "Classify the intent of this text: 'good morning'"}, {"role": "assistant", "content": "intent: greeting"}]}
+{"messages": [{"role": "user", "content": "Classify the intent of this text: 'what time is it'"}, {"role": "assistant", "content": "intent: question"}]}
+{"messages": [{"role": "user", "content": "Classify the intent of this text: 'when is the meeting'"}, {"role": "assistant", "content": "intent: question"}]}
+{"messages": [{"role": "user", "content": "Classify the intent of this text: 'how do I do this'"}, {"role": "assistant", "content": "intent: question"}]}
+{"messages": [{"role": "user", "content": "Classify the intent of this text: 'please turn on the lights'"}, {"role": "assistant", "content": "intent: command"}]}

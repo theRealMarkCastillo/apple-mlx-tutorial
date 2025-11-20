@@ -1,0 +1,2 @@
+{"messages": [{"role": "user", "content": "Classify the intent of this text: 'start the music'"}, {"role": "assistant", "content": "intent: command"}]}
+{"messages": [{"role": "user", "content": "Classify the intent of this text: 'open the door'"}, {"role": "assistant", "content": "intent: command"}]}

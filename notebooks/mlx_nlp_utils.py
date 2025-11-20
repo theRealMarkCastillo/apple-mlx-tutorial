@@ -12,6 +12,38 @@ from typing import List, Tuple, Dict
 
 
 # ============================================================================
+# DEVICE MANAGEMENT
+# ============================================================================
+
+def set_device(device_type='gpu'):
+    """
+    Set the default device for MLX operations.
+    
+    Args:
+        device_type (str): 'gpu' or 'cpu'. Defaults to 'gpu' if available.
+    """
+    if device_type == 'gpu':
+        mx.set_default_device(mx.Device(mx.gpu))
+    else:
+        mx.set_default_device(mx.Device(mx.cpu))
+
+def print_device_info():
+    """Print current MLX device information and hardware acceleration status."""
+    device = mx.default_device()
+    print(f"\n🖥️  Hardware Acceleration Check:")
+    print(f"   Device: {device}")
+    
+    if device == mx.Device(mx.gpu):
+        print("   ✅ Using Apple Silicon GPU (Metal)")
+        print("   ℹ️  MLX automatically optimizes for the GPU's Unified Memory.")
+        print("   ℹ️  Note: While Apple Silicon has an NPU (Neural Engine), MLX primarily")
+        print("       uses the powerful GPU for general-purpose training tasks like LSTMs.")
+    else:
+        print("   ⚠️  Using CPU (Slower)")
+        print("   ℹ️  Consider switching to GPU if on Apple Silicon.")
+
+
+# ============================================================================
 # INTENT CLASSIFICATION
 # ============================================================================
 
@@ -70,7 +102,16 @@ def pad_sequences(sequences: List[List[int]], max_len: int) -> np.ndarray:
 
 
 def train_model(model, X, y, epochs=50, learning_rate=0.01):
-    """Train model - works for all three model types"""
+    """
+    Generic training loop for MLX models.
+    
+    Args:
+        model: The MLX model to train
+        X: Input features (mx.array)
+        y: Target labels (mx.array)
+        epochs: Number of training iterations
+        learning_rate: Step size for the optimizer
+    """
     optimizer = optim.SGD(learning_rate=learning_rate)
     
     def loss_fn(model, X, y):
@@ -87,6 +128,11 @@ def train_model(model, X, y, epochs=50, learning_rate=0.01):
     for epoch in range(epochs):
         loss, grads = loss_and_grad_fn(model, X, y)
         optimizer.update(model, grads)
+        
+        # Force evaluation (Lazy Evaluation pattern)
+        # MLX is lazy - it builds a computation graph but doesn't run it until needed.
+        # mx.eval() forces the computation to happen now, ensuring the model parameters
+        # and optimizer state are actually updated in memory.
         mx.eval(model.parameters(), optimizer.state)
         
         # Calculate accuracy
@@ -105,12 +151,8 @@ def train_model(model, X, y, epochs=50, learning_rate=0.01):
     return model, history
 
 
-def predict_intent(model, text: str, vocab: set, intent_names: List[str], max_len: int) -> Tuple[str, float]:
+def predict_intent(model, text: str, word_to_idx: dict, intent_names: List[str], max_len: int) -> Tuple[str, float]:
     """Predict intent for a single text"""
-    word_to_idx = {word: i+2 for i, word in enumerate(sorted(vocab))}
-    word_to_idx['<PAD>'] = 0
-    word_to_idx['<UNK>'] = 1
-    
     tokens = [word_to_idx.get(word.lower(), word_to_idx['<UNK>']) 
               for word in text.split()]
     tokens = tokens[:max_len] + [0] * (max_len - len(tokens))
@@ -147,12 +189,8 @@ class SentimentLSTM(nn.Module):
         return logits
 
 
-def predict_sentiment(model, text: str, vocab: set, sentiment_names: List[str], max_len: int) -> Tuple[str, float]:
+def predict_sentiment(model, text: str, word_to_idx: dict, sentiment_names: List[str], max_len: int) -> Tuple[str, float]:
     """Predict sentiment for a single text"""
-    word_to_idx = {word: i+2 for i, word in enumerate(sorted(vocab))}
-    word_to_idx['<PAD>'] = 0
-    word_to_idx['<UNK>'] = 1
-    
     tokens = [word_to_idx.get(word.lower(), word_to_idx['<UNK>']) 
               for word in text.split()]
     tokens = tokens[:max_len] + [0] * (max_len - len(tokens))
