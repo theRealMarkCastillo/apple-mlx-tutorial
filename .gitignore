@@ -44,6 +44,8 @@ env/
 .ipynb_checkpoints
 **/.ipynb_checkpoints
 */.ipynb_checkpoints/
+# Explicitly include notebook files
+!*.ipynb
 
 # Data - Keep sample data, ignore large datasets
 data/imdb/
