@@ -38,6 +38,16 @@ Generate text and suggest completions
 - **Real dataset**: WikiText-2 (36K articles)
 - Temperature-controlled sampling with examples
 
+### 4. **Advanced LLMs**
+Modern Transformer architectures
+- **Notebooks**: `05_Attention_Mechanism.ipynb`, `06_Build_NanoGPT.ipynb`
+- **Content**: Build GPT from scratch, understand Attention
+
+### 5. **Production Systems**
+Fine-tuning and RAG
+- **Notebooks**: `07_Fine_Tuning_with_LoRA.ipynb`, `08_RAG_from_Scratch.ipynb`
+- **Content**: Fine-tune Llama-3.2, build Vector Search systems
+
 ## 🎯 Common Tasks
 
 ### Download Datasets

@@ -28,6 +28,8 @@ Open the appropriate notebook:
 - `02_Sentiment_Analysis.ipynb` - For sentiment analysis
 - `03_Text_Generation.ipynb` - For text generation
 - `04_Complete_Pipeline.ipynb` - For complete chatbot
+- `06_Build_NanoGPT.ipynb` - For training GPT from scratch
+- `07_Fine_Tuning_with_LoRA.ipynb` - For fine-tuning LLMs
 
 Each notebook includes:
 - Dataset loading and exploration

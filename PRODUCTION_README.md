@@ -35,6 +35,12 @@ This notebook demonstrates the full production pipeline:
 
 **Expected runtime**: ~10-15 minutes on M1/M2/M3 Mac
 
+### 3. Advanced Production: RAG & Fine-Tuning
+
+For modern LLM workflows, check out:
+- **07_Fine_Tuning_with_LoRA.ipynb**: Fine-tune Llama-3.2 on your own data
+- **08_RAG_from_Scratch.ipynb**: Build a production-ready RAG system with vector search
+
 ## 📊 What Datasets Are Available?
 
 ### Sentiment Analysis

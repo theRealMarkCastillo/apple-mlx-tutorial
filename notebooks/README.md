@@ -55,6 +55,41 @@ End-to-end chatbot combining all techniques
   - Ensemble predictions
   - Deployment workflow
 
+### 5. Attention Mechanism (`05_Attention_Mechanism.ipynb`)
+Understand the math behind Transformers
+- **Time**: 45-60 minutes
+- **Level**: Advanced
+- **Visualizations**:
+  - Attention heatmaps
+  - Cross-attention patterns
+
+### 6. Build NanoGPT (`06_Build_NanoGPT.ipynb`)
+Build a GPT model from scratch
+- **Time**: 90-120 minutes
+- **Level**: Expert
+- **Content**:
+  - Multi-Head Attention
+  - Transformer Blocks
+  - Training on Shakespeare
+
+### 7. Fine-Tuning with LoRA (`07_Fine_Tuning_with_LoRA.ipynb`)
+Fine-tune Llama-3.2 on your own data
+- **Time**: 60-90 minutes
+- **Level**: Expert
+- **Content**:
+  - LoRA (Low-Rank Adaptation)
+  - 4-bit Quantization
+  - Custom Dataset Preparation
+
+### 8. RAG from Scratch (`08_RAG_from_Scratch.ipynb`)
+Build a Retrieval Augmented Generation system
+- **Time**: 60-90 minutes
+- **Level**: Expert
+- **Content**:
+  - Vector Search & Embeddings
+  - System Design (Scaling to 100M docs)
+  - RAG vs Fine-Tuning
+
 ## 🚀 Quick Start
 
 ```bash
@@ -62,7 +97,7 @@ End-to-end chatbot combining all techniques
 source ../.venv/bin/activate
 
 # 2. Install Jupyter and visualization libraries
-pip install jupyter matplotlib seaborn plotly scikit-learn wordcloud
+pip install jupyter matplotlib seaborn plotly scikit-learn wordcloud mlx-lm
 
 # 3. Download sample datasets
 python ../scripts/download_datasets.py --samples
@@ -78,6 +113,9 @@ jupyter notebook
 ### Core Concepts
 - Word embeddings and tokenization
 - LSTM networks for sequence modeling
+- Transformer architectures (Attention, GPT)
+- Fine-tuning LLMs with LoRA
+- RAG (Retrieval Augmented Generation)
 - Training loops and optimization
 - Model evaluation and metrics
 - Production deployment
@@ -98,6 +136,7 @@ jupyter notebook
   - SNIPS: 16K+ voice queries
   - IMDB: 50K movie reviews
   - WikiText: 100M+ tokens
+  - Shakespeare: For training NanoGPT
 
 ## 🎯 Learning Paths
 
@@ -118,6 +157,12 @@ jupyter notebook
 2. Build custom chatbot
 3. Deploy to production
 4. Add new features
+
+### Path 4: LLM Specialist (10+ hours)
+1. Attention Mechanism (Notebook 05)
+2. Build NanoGPT (Notebook 06)
+3. Fine-Tuning with LoRA (Notebook 07)
+4. RAG from Scratch (Notebook 08)
 
 ## 📈 Expected Results
 
