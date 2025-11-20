@@ -1,6 +1,76 @@
-The quick brown fox jumps over the lazy dog.
-Machine learning is a subset of artificial intelligence.
-Natural language processing helps computers understand human language.
-Deep learning uses neural networks with multiple layers.
-Apple Silicon provides unified memory architecture for ML acceleration.
-MLX is Apple's framework for machine learning on Apple Silicon.
+
+    Machine learning (ML) is a field of study in artificial intelligence concerned with the development and study of statistical algorithms that can learn from data and generalize to unseen data, and thus perform tasks without explicit instructions. Recently, artificial neural networks have been able to surpass many previous approaches in performance.
+    
+    MLX is an array framework for machine learning on Apple silicon, brought to you by the Apple machine learning research team.
+    MLX is designed by machine learning researchers for machine learning researchers. The framework is intended to be user-friendly, but still efficient to train and deploy models. The design of the framework itself is also conceptually simple. We intend to make it easy for researchers to extend and improve MLX with the goal of quickly exploring new ideas.
+    
+    The design of MLX is inspired by frameworks like NumPy, PyTorch, Jax, and ArrayFire. A notable difference from these frameworks and MLX is the unified memory model. Arrays in MLX live in shared memory. Operations on MLX arrays can be performed on any of the supported device types without moving data. Currently supported device types are the CPU and the GPU.
+    
+    Key features of MLX include:
+    Familiar APIs: MLX has a Python API that closely follows NumPy. MLX also has fully featured C++, C, and Swift APIs, which closely mirror the Python API. MLX has higher-level packages like mlx.nn and mlx.optimizers with APIs that closely follow PyTorch to simplify building more complex models.
+    Composable function transformations: MLX has composable function transformations for automatic differentiation, automatic vectorization, and computation graph optimization.
+    Lazy computation: Computations in MLX are lazy. Arrays are only materialized when needed.
+    Dynamic graph construction: Computation graphs in MLX are constructed dynamically. Changing the shapes of function arguments does not trigger slow compilations, and debugging is simple and intuitive.
+    Multi-device: Operations can run on any of the supported devices (currently the CPU and the GPU).
+    Unified memory: A notable difference from other frameworks and MLX is the unified memory model. Arrays in MLX live in shared memory. Operations on MLX arrays can be performed on any of the supported device types without moving data.
+    
+    Machine learning (ML) is a field of study in artificial intelligence concerned with the development and study of statistical algorithms that can learn from data and generalize to unseen data, and thus perform tasks without explicit instructions. Recently, artificial neural networks have been able to surpass many previous approaches in performance.
+    
+    MLX is an array framework for machine learning on Apple silicon, brought to you by the Apple machine learning research team.
+    MLX is designed by machine learning researchers for machine learning researchers. The framework is intended to be user-friendly, but still efficient to train and deploy models. The design of the framework itself is also conceptually simple. We intend to make it easy for researchers to extend and improve MLX with the goal of quickly exploring new ideas.
+    
+    The design of MLX is inspired by frameworks like NumPy, PyTorch, Jax, and ArrayFire. A notable difference from these frameworks and MLX is the unified memory model. Arrays in MLX live in shared memory. Operations on MLX arrays can be performed on any of the supported device types without moving data. Currently supported device types are the CPU and the GPU.
+    
+    Key features of MLX include:
+    Familiar APIs: MLX has a Python API that closely follows NumPy. MLX also has fully featured C++, C, and Swift APIs, which closely mirror the Python API. MLX has higher-level packages like mlx.nn and mlx.optimizers with APIs that closely follow PyTorch to simplify building more complex models.
+    Composable function transformations: MLX has composable function transformations for automatic differentiation, automatic vectorization, and computation graph optimization.
+    Lazy computation: Computations in MLX are lazy. Arrays are only materialized when needed.
+    Dynamic graph construction: Computation graphs in MLX are constructed dynamically. Changing the shapes of function arguments does not trigger slow compilations, and debugging is simple and intuitive.
+    Multi-device: Operations can run on any of the supported devices (currently the CPU and the GPU).
+    Unified memory: A notable difference from other frameworks and MLX is the unified memory model. Arrays in MLX live in shared memory. Operations on MLX arrays can be performed on any of the supported device types without moving data.
+    
+    Machine learning (ML) is a field of study in artificial intelligence concerned with the development and study of statistical algorithms that can learn from data and generalize to unseen data, and thus perform tasks without explicit instructions. Recently, artificial neural networks have been able to surpass many previous approaches in performance.
+    
+    MLX is an array framework for machine learning on Apple silicon, brought to you by the Apple machine learning research team.
+    MLX is designed by machine learning researchers for machine learning researchers. The framework is intended to be user-friendly, but still efficient to train and deploy models. The design of the framework itself is also conceptually simple. We intend to make it easy for researchers to extend and improve MLX with the goal of quickly exploring new ideas.
+    
+    The design of MLX is inspired by frameworks like NumPy, PyTorch, Jax, and ArrayFire. A notable difference from these frameworks and MLX is the unified memory model. Arrays in MLX live in shared memory. Operations on MLX arrays can be performed on any of the supported device types without moving data. Currently supported device types are the CPU and the GPU.
+    
+    Key features of MLX include:
+    Familiar APIs: MLX has a Python API that closely follows NumPy. MLX also has fully featured C++, C, and Swift APIs, which closely mirror the Python API. MLX has higher-level packages like mlx.nn and mlx.optimizers with APIs that closely follow PyTorch to simplify building more complex models.
+    Composable function transformations: MLX has composable function transformations for automatic differentiation, automatic vectorization, and computation graph optimization.
+    Lazy computation: Computations in MLX are lazy. Arrays are only materialized when needed.
+    Dynamic graph construction: Computation graphs in MLX are constructed dynamically. Changing the shapes of function arguments does not trigger slow compilations, and debugging is simple and intuitive.
+    Multi-device: Operations can run on any of the supported devices (currently the CPU and the GPU).
+    Unified memory: A notable difference from other frameworks and MLX is the unified memory model. Arrays in MLX live in shared memory. Operations on MLX arrays can be performed on any of the supported device types without moving data.
+    
+    Machine learning (ML) is a field of study in artificial intelligence concerned with the development and study of statistical algorithms that can learn from data and generalize to unseen data, and thus perform tasks without explicit instructions. Recently, artificial neural networks have been able to surpass many previous approaches in performance.
+    
+    MLX is an array framework for machine learning on Apple silicon, brought to you by the Apple machine learning research team.
+    MLX is designed by machine learning researchers for machine learning researchers. The framework is intended to be user-friendly, but still efficient to train and deploy models. The design of the framework itself is also conceptually simple. We intend to make it easy for researchers to extend and improve MLX with the goal of quickly exploring new ideas.
+    
+    The design of MLX is inspired by frameworks like NumPy, PyTorch, Jax, and ArrayFire. A notable difference from these frameworks and MLX is the unified memory model. Arrays in MLX live in shared memory. Operations on MLX arrays can be performed on any of the supported device types without moving data. Currently supported device types are the CPU and the GPU.
+    
+    Key features of MLX include:
+    Familiar APIs: MLX has a Python API that closely follows NumPy. MLX also has fully featured C++, C, and Swift APIs, which closely mirror the Python API. MLX has higher-level packages like mlx.nn and mlx.optimizers with APIs that closely follow PyTorch to simplify building more complex models.
+    Composable function transformations: MLX has composable function transformations for automatic differentiation, automatic vectorization, and computation graph optimization.
+    Lazy computation: Computations in MLX are lazy. Arrays are only materialized when needed.
+    Dynamic graph construction: Computation graphs in MLX are constructed dynamically. Changing the shapes of function arguments does not trigger slow compilations, and debugging is simple and intuitive.
+    Multi-device: Operations can run on any of the supported devices (currently the CPU and the GPU).
+    Unified memory: A notable difference from other frameworks and MLX is the unified memory model. Arrays in MLX live in shared memory. Operations on MLX arrays can be performed on any of the supported device types without moving data.
+    
+    Machine learning (ML) is a field of study in artificial intelligence concerned with the development and study of statistical algorithms that can learn from data and generalize to unseen data, and thus perform tasks without explicit instructions. Recently, artificial neural networks have been able to surpass many previous approaches in performance.
+    
+    MLX is an array framework for machine learning on Apple silicon, brought to you by the Apple machine learning research team.
+    MLX is designed by machine learning researchers for machine learning researchers. The framework is intended to be user-friendly, but still efficient to train and deploy models. The design of the framework itself is also conceptually simple. We intend to make it easy for researchers to extend and improve MLX with the goal of quickly exploring new ideas.
+    
+    The design of MLX is inspired by frameworks like NumPy, PyTorch, Jax, and ArrayFire. A notable difference from these frameworks and MLX is the unified memory model. Arrays in MLX live in shared memory. Operations on MLX arrays can be performed on any of the supported device types without moving data. Currently supported device types are the CPU and the GPU.
+    
+    Key features of MLX include:
+    Familiar APIs: MLX has a Python API that closely follows NumPy. MLX also has fully featured C++, C, and Swift APIs, which closely mirror the Python API. MLX has higher-level packages like mlx.nn and mlx.optimizers with APIs that closely follow PyTorch to simplify building more complex models.
+    Composable function transformations: MLX has composable function transformations for automatic differentiation, automatic vectorization, and computation graph optimization.
+    Lazy computation: Computations in MLX are lazy. Arrays are only materialized when needed.
+    Dynamic graph construction: Computation graphs in MLX are constructed dynamically. Changing the shapes of function arguments does not trigger slow compilations, and debugging is simple and intuitive.
+    Multi-device: Operations can run on any of the supported devices (currently the CPU and the GPU).
+    Unified memory: A notable difference from other frameworks and MLX is the unified memory model. Arrays in MLX live in shared memory. Operations on MLX arrays can be performed on any of the supported device types without moving data.
+    

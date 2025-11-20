@@ -8,6 +8,8 @@ import mlx.core as mx
 import mlx.nn as nn
 import mlx.optimizers as optim
 import numpy as np
+import json
+from pathlib import Path
 from typing import List, Tuple, Dict
 
 
@@ -273,14 +275,38 @@ def generate_text(model, seed: str, char_to_idx: dict, idx_to_char: dict,
 # SAMPLE DATA LOADERS
 # ============================================================================
 
+def _find_data_file(filename):
+    """Helper to find data file in common locations"""
+    candidates = [
+        Path(filename),
+        Path("..") / filename,
+        Path("data") / filename,
+        Path("../data") / filename,
+        Path("notebooks/data") / filename
+    ]
+    for path in candidates:
+        if path.exists():
+            return path
+    return None
+
 def load_sample_intent_data():
     """Load sample intent classification data"""
-    texts = [
-        "Hello", "Hi there", "Good morning",
-        "What's the weather", "Tell me the time", "How are you",
-        "Turn on the light", "Set a timer", "Play music"
-    ]
-    labels = ['greeting', 'greeting', 'greeting', 'question', 'question', 'question', 'command', 'command', 'command']
+    data_path = _find_data_file("intent_samples/data.json")
+    
+    if data_path:
+        print(f"Loading intent data from {data_path}")
+        with open(data_path, 'r') as f:
+            data = json.load(f)
+        texts = data['texts']
+        labels = data['labels']
+    else:
+        print("Using hardcoded intent data (synthetic data not found)")
+        texts = [
+            "Hello", "Hi there", "Good morning",
+            "What's the weather", "Tell me the time", "How are you",
+            "Turn on the light", "Set a timer", "Play music"
+        ]
+        labels = ['greeting', 'greeting', 'greeting', 'question', 'question', 'question', 'command', 'command', 'command']
     
     # Build vocabulary
     vocab = {"<PAD>": 0, "<UNK>": 1}
@@ -297,12 +323,22 @@ def load_sample_intent_data():
 
 def load_sample_sentiment_data():
     """Load sample sentiment analysis data"""
-    texts = [
-        "I love this", "This is amazing", "Fantastic",
-        "I hate this", "This is terrible", "Awful",
-        "It's okay", "Not bad", "Average"
-    ]
-    labels = ['positive', 'positive', 'positive', 'negative', 'negative', 'negative', 'neutral', 'neutral', 'neutral']
+    data_path = _find_data_file("sentiment_samples/data.json")
+    
+    if data_path:
+        print(f"Loading sentiment data from {data_path}")
+        with open(data_path, 'r') as f:
+            data = json.load(f)
+        texts = data['texts']
+        labels = data['labels']
+    else:
+        print("Using hardcoded sentiment data (synthetic data not found)")
+        texts = [
+            "I love this", "This is amazing", "Fantastic",
+            "I hate this", "This is terrible", "Awful",
+            "It's okay", "Not bad", "Average"
+        ]
+        labels = ['positive', 'positive', 'positive', 'negative', 'negative', 'negative', 'neutral', 'neutral', 'neutral']
     
     # Build vocabulary
     vocab = {"<PAD>": 0, "<UNK>": 1}
@@ -319,11 +355,37 @@ def load_sample_sentiment_data():
 
 def load_sample_corpus():
     """Load sample text generation corpus"""
-    corpus = """hello how are you today what is your name thank you very much"""
+    data_path = _find_data_file("text_gen_samples/corpus.txt")
+    
+    if data_path:
+        print(f"Loading corpus from {data_path}")
+        with open(data_path, 'r') as f:
+            corpus = f.read()
+    else:
+        print("Using hardcoded corpus (synthetic data not found)")
+        corpus = """hello how are you today what is your name thank you very much"""
     
     # Build character vocabulary
     vocab = {c: i for i, c in enumerate(sorted(set(corpus)))}
     idx2char = {i: c for c, i in vocab.items()}
     
     return corpus, vocab, idx2char
+
+def load_rag_knowledge_base():
+    """Load sample RAG knowledge base"""
+    data_path = _find_data_file("rag_samples/knowledge_base.json")
+    
+    if data_path:
+        print(f"Loading knowledge base from {data_path}")
+        with open(data_path, 'r') as f:
+            documents = json.load(f)
+    else:
+        print("Using hardcoded knowledge base (synthetic data not found)")
+        documents = [
+            "MLX is an array framework for machine learning on Apple Silicon.",
+            "The Unified Memory architecture allows CPU and GPU to share memory.",
+            "LSTMs are recurrent neural networks capable of learning long-term dependencies."
+        ]
+    
+    return documents
 
