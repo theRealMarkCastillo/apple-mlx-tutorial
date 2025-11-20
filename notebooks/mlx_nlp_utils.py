@@ -112,7 +112,8 @@ def train_model(model, X, y, epochs=50, learning_rate=0.01):
         epochs: Number of training iterations
         learning_rate: Step size for the optimizer
     """
-    optimizer = optim.SGD(learning_rate=learning_rate)
+    # Use Adam optimizer for better convergence
+    optimizer = optim.Adam(learning_rate=learning_rate)
     
     def loss_fn(model, X, y):
         logits = model(mx.array(X))
