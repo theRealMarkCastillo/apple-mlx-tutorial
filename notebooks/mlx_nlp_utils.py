@@ -81,7 +81,11 @@ def create_vocabulary(texts: List[str]) -> Tuple[set, dict]:
 
 def preprocess_text(text: str) -> List[str]:
     """Preprocess text for classification"""
-    return text.lower().split()
+    # Simple punctuation removal
+    text = text.lower()
+    for char in '.,!?;:':
+        text = text.replace(char, ' ')
+    return text.split()
 
 
 def texts_to_sequences(texts: List[str], word_to_idx: dict) -> List[List[int]]:
@@ -120,8 +124,9 @@ def train_model(model, X, y, epochs=50, learning_rate=0.01):
     def loss_fn(model, X, y):
         logits = model(mx.array(X))
         # Handle different output shapes
-        if len(logits.shape) == 3:  # TextLSTM outputs (batch, seq, vocab)
-            logits = logits[:, -1, :]  # Take last timestep
+        # If logits is 3D (batch, seq, vocab) and targets is 1D (batch), take last timestep
+        if len(logits.shape) == 3 and len(y.shape) == 1:
+            logits = logits[:, -1, :]
         return mx.mean(nn.losses.cross_entropy(logits, mx.array(y)))
     
     loss_and_grad_fn = nn.value_and_grad(model, loss_fn)
@@ -140,7 +145,7 @@ def train_model(model, X, y, epochs=50, learning_rate=0.01):
         
         # Calculate accuracy
         logits = model(mx.array(X))
-        if len(logits.shape) == 3:  # TextLSTM
+        if len(logits.shape) == 3 and len(y.shape) == 1:
             logits = logits[:, -1, :]
         predictions = mx.argmax(logits, axis=1)
         accuracy = mx.mean(predictions == mx.array(y))
@@ -295,7 +300,7 @@ def load_sample_intent_data():
     
     if data_path:
         print(f"Loading intent data from {data_path}")
-        with open(data_path, 'r') as f:
+        with open(data_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
         texts = data['texts']
         labels = data['labels']
@@ -327,7 +332,7 @@ def load_sample_sentiment_data():
     
     if data_path:
         print(f"Loading sentiment data from {data_path}")
-        with open(data_path, 'r') as f:
+        with open(data_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
         texts = data['texts']
         labels = data['labels']
@@ -359,7 +364,7 @@ def load_sample_corpus():
     
     if data_path:
         print(f"Loading corpus from {data_path}")
-        with open(data_path, 'r') as f:
+        with open(data_path, 'r', encoding='utf-8') as f:
             corpus = f.read()
     else:
         print("Using hardcoded corpus (synthetic data not found)")
@@ -377,7 +382,7 @@ def load_rag_knowledge_base():
     
     if data_path:
         print(f"Loading knowledge base from {data_path}")
-        with open(data_path, 'r') as f:
+        with open(data_path, 'r', encoding='utf-8') as f:
             documents = json.load(f)
     else:
         print("Using hardcoded knowledge base (synthetic data not found)")
@@ -388,4 +393,66 @@ def load_rag_knowledge_base():
         ]
     
     return documents
+
+
+# ============================================================================
+# MODEL PERSISTENCE & EVALUATION
+# ============================================================================
+
+def save_model(model: nn.Module, path: str):
+    """
+    Save model weights to a file.
+    
+    Args:
+        model: The MLX model to save
+        path: Path to save the weights (e.g., 'model.npz' or 'model.safetensors')
+    """
+    path = str(path)
+    print(f"Saving model weights to {path}...")
+    model.save_weights(path)
+    print("✅ Model saved successfully.")
+
+
+def load_model(model: nn.Module, path: str):
+    """
+    Load model weights from a file.
+    
+    Args:
+        model: The MLX model instance (must be initialized with same architecture)
+        path: Path to the weights file
+    """
+    path = str(path)
+    if not Path(path).exists():
+        raise FileNotFoundError(f"Model file not found: {path}")
+        
+    print(f"Loading model weights from {path}...")
+    model.load_weights(path)
+    print("✅ Model loaded successfully.")
+
+
+def evaluate_model(model: nn.Module, X: mx.array, y: mx.array) -> Tuple[float, List[int], List[int]]:
+    """
+    Evaluate model and return accuracy + predictions for confusion matrix.
+    
+    Args:
+        model: Trained MLX model
+        X: Input features
+        y: True labels
+        
+    Returns:
+        accuracy: Float
+        y_true: List of true labels
+        y_pred: List of predicted labels
+    """
+    # Ensure evaluation
+    mx.eval(X, y)
+    
+    logits = model(X)
+    if len(logits.shape) == 3 and len(y.shape) == 1:
+        logits = logits[:, -1, :]
+        
+    predictions = mx.argmax(logits, axis=1)
+    accuracy = mx.mean(predictions == y).item()
+    
+    return accuracy, y.tolist(), predictions.tolist()
 
