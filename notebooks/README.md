@@ -90,6 +90,16 @@ Build a Retrieval Augmented Generation system
   - System Design (Scaling to 100M docs)
   - RAG vs Fine-Tuning
 
+### 9. Embeddings Deep Dive (`09_Embeddings_Deep_Dive.ipynb`)
+Advanced optimization for RAG systems
+- **Time**: 60-90 minutes
+- **Level**: Expert
+- **Content**:
+  - Visualizing Embedding Space (t-SNE)
+  - Benchmarking Models (Speed vs Quality)
+  - Domain-Specific Fine-Tuning
+  - Trace Retrieval Optimization
+
 ## 🚀 Quick Start
 
 ```bash

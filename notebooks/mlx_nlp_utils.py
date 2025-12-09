@@ -107,7 +107,7 @@ def pad_sequences(sequences: List[List[int]], max_len: int) -> np.ndarray:
     return padded
 
 
-def train_model(model, X, y, epochs=50, learning_rate=0.01):
+def train_model(model: nn.Module, X: mx.array, y: mx.array, epochs: int = 50, learning_rate: float = 0.01) -> Tuple[nn.Module, Dict[str, List[float]]]:
     """
     Generic training loop for MLX models.
     
@@ -117,6 +117,10 @@ def train_model(model, X, y, epochs=50, learning_rate=0.01):
         y: Target labels (mx.array)
         epochs: Number of training iterations
         learning_rate: Step size for the optimizer
+        
+    Returns:
+        model: The trained model
+        history: Dictionary with 'loss' and 'accuracy' lists
     """
     # Use Adam optimizer for better convergence
     optimizer = optim.Adam(learning_rate=learning_rate)
