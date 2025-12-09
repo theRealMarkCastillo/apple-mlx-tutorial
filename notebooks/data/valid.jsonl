@@ -1,2 +1,32 @@
-{"messages": [{"role": "user", "content": "Classify the intent of this text: 'start the music'"}, {"role": "assistant", "content": "intent: command"}]}
-{"messages": [{"role": "user", "content": "Classify the intent of this text: 'open the door'"}, {"role": "assistant", "content": "intent: command"}]}
+{"messages": [{"role": "user", "content": "Classify the intent of this text: 'go away please'"}, {"role": "assistant", "content": "intent: command"}]}
+{"messages": [{"role": "user", "content": "Classify the intent of this text: 'where can I find help please'"}, {"role": "assistant", "content": "intent: question"}]}
+{"messages": [{"role": "user", "content": "Classify the intent of this text: 'call john ok'"}, {"role": "assistant", "content": "intent: command"}]}
+{"messages": [{"role": "user", "content": "Classify the intent of this text: 'why is this not working please'"}, {"role": "assistant", "content": "intent: question"}]}
+{"messages": [{"role": "user", "content": "Classify the intent of this text: 'could you turn off the tv'"}, {"role": "assistant", "content": "intent: command"}]}
+{"messages": [{"role": "user", "content": "Classify the intent of this text: 'how much does it cost please'"}, {"role": "assistant", "content": "intent: question"}]}
+{"messages": [{"role": "user", "content": "Classify the intent of this text: 'ok go away'"}, {"role": "assistant", "content": "intent: command"}]}
+{"messages": [{"role": "user", "content": "Classify the intent of this text: 'why is this not working please'"}, {"role": "assistant", "content": "intent: question"}]}
+{"messages": [{"role": "user", "content": "Classify the intent of this text: 'ok mute'"}, {"role": "assistant", "content": "intent: command"}]}
+{"messages": [{"role": "user", "content": "Classify the intent of this text: 'is this correct please'"}, {"role": "assistant", "content": "intent: question"}]}
+{"messages": [{"role": "user", "content": "Classify the intent of this text: 'turn on the lights please'"}, {"role": "assistant", "content": "intent: command"}]}
+{"messages": [{"role": "user", "content": "Classify the intent of this text: 'when is the meeting please'"}, {"role": "assistant", "content": "intent: question"}]}
+{"messages": [{"role": "user", "content": "Classify the intent of this text: 'hey show me the map'"}, {"role": "assistant", "content": "intent: command"}]}
+{"messages": [{"role": "user", "content": "Classify the intent of this text: 'when does the store open please'"}, {"role": "assistant", "content": "intent: question"}]}
+{"messages": [{"role": "user", "content": "Classify the intent of this text: 'ok go away'"}, {"role": "assistant", "content": "intent: command"}]}
+{"messages": [{"role": "user", "content": "Classify the intent of this text: 'how does this work please'"}, {"role": "assistant", "content": "intent: question"}]}
+{"messages": [{"role": "user", "content": "Classify the intent of this text: 'close the window can you'"}, {"role": "assistant", "content": "intent: command"}]}
+{"messages": [{"role": "user", "content": "Classify the intent of this text: 'who is the ceo please'"}, {"role": "assistant", "content": "intent: question"}]}
+{"messages": [{"role": "user", "content": "Classify the intent of this text: 'show me the map ok'"}, {"role": "assistant", "content": "intent: command"}]}
+{"messages": [{"role": "user", "content": "Classify the intent of this text: 'where can I find help please'"}, {"role": "assistant", "content": "intent: question"}]}
+{"messages": [{"role": "user", "content": "Classify the intent of this text: 'hey stop'"}, {"role": "assistant", "content": "intent: command"}]}
+{"messages": [{"role": "user", "content": "Classify the intent of this text: 'how do I do this please'"}, {"role": "assistant", "content": "intent: question"}]}
+{"messages": [{"role": "user", "content": "Classify the intent of this text: 'can you mute'"}, {"role": "assistant", "content": "intent: command"}]}
+{"messages": [{"role": "user", "content": "Classify the intent of this text: 'what is your name please'"}, {"role": "assistant", "content": "intent: question"}]}
+{"messages": [{"role": "user", "content": "Classify the intent of this text: 'go away please'"}, {"role": "assistant", "content": "intent: command"}]}
+{"messages": [{"role": "user", "content": "Classify the intent of this text: 'when is the meeting please'"}, {"role": "assistant", "content": "intent: question"}]}
+{"messages": [{"role": "user", "content": "Classify the intent of this text: 'remind me to call mom ok'"}, {"role": "assistant", "content": "intent: command"}]}
+{"messages": [{"role": "user", "content": "Classify the intent of this text: 'where is the office please'"}, {"role": "assistant", "content": "intent: question"}]}
+{"messages": [{"role": "user", "content": "Classify the intent of this text: 'hey open the door'"}, {"role": "assistant", "content": "intent: command"}]}
+{"messages": [{"role": "user", "content": "Classify the intent of this text: 'what are the hours please'"}, {"role": "assistant", "content": "intent: question"}]}
+{"messages": [{"role": "user", "content": "Classify the intent of this text: 'remind me to call mom ok'"}, {"role": "assistant", "content": "intent: command"}]}
+{"messages": [{"role": "user", "content": "Classify the intent of this text: 'what is the weather like please'"}, {"role": "assistant", "content": "intent: question"}]}
