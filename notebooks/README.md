@@ -73,6 +73,16 @@ Understand the math behind Transformers
   - Attention heatmaps
   - Cross-attention patterns
 
+### 6b. Prompt Engineering (`06b_Prompt_Engineering.ipynb`)
+Translates attention theory into prompt-design rules
+- **Time**: 30-45 minutes
+- **Level**: Advanced
+- **Content**:
+  - "Lost in the Middle" — positional bias in attention
+  - Context-length dilution
+  - Semantic-similarity effects (why RAG works)
+  - Prompt-engineering cheat sheet
+
 ### 7. Build NanoGPT (`07_Build_NanoGPT.ipynb`)
 Build a GPT model from scratch
 - **Time**: 90-120 minutes
@@ -149,9 +159,10 @@ jupyter notebook
 
 ### Datasets
 - **Sample Data**: Quick testing (< 1 second)
-  - 9 intent examples
-  - 8 sentiment reviews
+  - 160 intent examples
+  - 150 sentiment reviews
   - Small text corpus
+  - 800 chat-format messages for LoRA demo
 - **Real Datasets**: Production training (10-30 seconds)
   - SNIPS: 16K+ voice queries
   - IMDB: 50K movie reviews
@@ -237,7 +248,7 @@ jupyter notebook
 ## 📚 Additional Resources
 
 ### Documentation
-- **Source code**: `notebooks/mlx_nlp_utils.py` (460+ lines of shared utilities)
+- **Source code**: `notebooks/mlx_nlp_utils.py` (~470 lines of shared utilities)
 - `../TRAINING_GUIDE.md` - Complete training instructions
 - `../README.md` - Project overview
 
@@ -250,6 +261,7 @@ jupyter notebook
 - `../data/intent_samples/` - Sample intent data
 - `../data/sentiment_samples/` - Sample reviews
 - `../data/text_gen_samples/` - Sample corpus
+- `../data/lora_train.jsonl` / `../data/lora_valid.jsonl` - Chat data for LoRA fine-tuning
 
 ## 🐛 Troubleshooting
 

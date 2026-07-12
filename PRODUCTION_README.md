@@ -51,7 +51,7 @@ For modern LLM workflows, check out:
 
 ### Intent Classification
 - **ATIS**: 5,871 flight booking queries (26 intents)
-- **SNIPS**: 16K+ queries (7 intents: weather, music, etc.)
+- **SNIPS**: 16K+ queries (6 intents: weather, music, etc.)
 - **Banking77**: 13K banking queries (77 fine-grained intents)
 
 ### Text Generation
@@ -172,18 +172,33 @@ async def predict(text: str):
     return model.predict(text)
 ```
 
-### 4. Docker Deployment
+### 4. Convert to Core ML (Apple Silicon Only)
 
-```dockerfile
-FROM python:3.11-slim
-WORKDIR /app
-COPY requirements.txt .
-RUN pip install -r requirements.txt
-COPY production_models/ ./production_models/
-COPY notebooks/mlx_nlp_utils.py .
-COPY app.py .
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
+> **MLX only runs on Apple Silicon.** There is no CUDA/x86 path, so Docker or other Linux deployments must target an inference stack other than MLX. For on-device deployment in iOS or macOS apps, convert your trained model to Core ML:
+
+```bash
+pip install coremltools
 ```
+
+```python
+import coremltools as ct
+import mlx.core as mx
+
+# Trace the model with a representative input
+sample_input = mx.random.randint(0, 5000, (1, 50))
+
+# Convert via a traced PyTorch wrapper or by exporting weights,
+# then build a Core ML spec with coremltools.
+# (For LSTM models, use ct.converters.mil; for transformer checkpoints
+# exported from mlx-lm, load via `transformers` and convert.)
+mlmodel = ct.convert(
+    traced_model,
+    inputs=[ct.TensorType(name="input", shape=(1, 50), dtype=int)],
+)
+mlmodel.save("SentimentClassifier.mlmodel")
+```
+
+Then load in your iOS/macOS app with `SentimentClassifier.mlmodel`. For an LSTM trained directly in MLX, the simplest production path is usually to re-implement the architecture in PyTorch, export to ONNX, and convert to Core ML — or serve the MLX model via a local FastAPI process on the Mac and call it from your app.
 
 ## 🧪 Running Experiments
 

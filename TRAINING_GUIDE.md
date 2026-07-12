@@ -29,6 +29,8 @@ Open the appropriate notebook:
 - `03_Text_Generation.ipynb` - For text generation
 - `04_Complete_Pipeline.ipynb` - For complete chatbot
 - `05_Transformer_Classifier.ipynb` - For Transformer-based classification
+- `06_Attention_Mechanism.ipynb` - For attention theory
+- `06b_Prompt_Engineering.ipynb` - For prompt engineering patterns
 - `07_Build_NanoGPT.ipynb` - For training GPT from scratch
 - `08_Fine_Tuning_with_LoRA.ipynb` - For fine-tuning LLMs
 
@@ -63,7 +65,7 @@ python scripts/download_datasets.py --all
 
 | Dataset | Size | Download Time | Use Case |
 |---------|------|---------------|----------|
-| Samples | ~30 examples | <1 sec | Quick testing |
+| Samples | ~310 examples | <1 sec | Quick testing |
 | SNIPS | 16K queries | ~10 sec | Intent classification |
 | IMDB | 50K reviews | ~30 sec | Sentiment analysis |
 | Banking77 | 13K queries | ~15 sec | Fine-grained intents |
@@ -88,7 +90,7 @@ jupyter notebook
 
 **Expected output in notebook:**
 ```
-Loaded 9 examples
+Loaded 160 examples
 Intents: ['command', 'greeting', 'question']
 Training...
 Epoch      Loss         Accuracy
@@ -137,11 +139,13 @@ After downloading, your `data/` directory will look like:
 ```
 data/
 ├── intent_samples/
-│   └── data.json              # 9 intent examples
+│   └── data.json              # 160 intent examples
 ├── sentiment_samples/
-│   └── data.json              # 8 sentiment examples
+│   └── data.json              # 150 sentiment examples
 ├── text_gen_samples/
 │   └── corpus.txt             # Small text corpus
+├── lora_train.jsonl           # 800 chat-format messages for LoRA fine-tuning
+├── lora_valid.jsonl           # 200 chat-format messages for LoRA validation
 ├── snips/
 │   ├── train.json             # SNIPS training data
 │   └── test.json              # SNIPS test data
@@ -193,7 +197,7 @@ config = {
 ### Intent Classification (Sample Data)
 
 ```
-Dataset: 9 examples, 3 intents
+Dataset: 160 examples, 3 intents
 Training: 30 epochs, ~5 seconds
 Final Accuracy: 90-100%
 
@@ -208,7 +212,7 @@ Test examples:
 ### Intent Classification (SNIPS Data)
 
 ```
-Dataset: 16K+ examples, 7 intents
+Dataset: 16K+ examples, 6 intents
 Training: 50 epochs, ~2 minutes
 Final Accuracy: 85-95%
 

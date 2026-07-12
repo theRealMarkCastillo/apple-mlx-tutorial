@@ -9,17 +9,19 @@ Usage:
     python scripts/download_datasets.py --all
     python scripts/download_datasets.py --imdb --snips
     python scripts/download_datasets.py --sentiment
+
+The ``--samples`` flag delegates to ``scripts/generate_synthetic_data.py`` so
+that there is exactly one canonical source of synthetic data in this repo.
 """
 
 import argparse
 import json
-import os
 import sys
 import traceback
 from pathlib import Path
 
-# Add parent directory to path
-sys.path.insert(0, str(Path(__file__).parent.parent))
+# Add repo root to sys.path so we can import the synthetic-data generator.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 try:
     from datasets import load_dataset
@@ -29,165 +31,150 @@ except ImportError:
     sys.exit(1)
 
 
+# Known HuggingFace mirrors/configs for SNIPS. ``bbalogh/snips_built_in_intents``
+# is a stable public mirror of the original SNIPS voice-assistant corpus.
+_SNIPS_CANDIDATES = [
+    "bbalogh/snips_built_in_intents",
+    "snips_built_in_intents",
+]
+
+
 class DatasetDownloader:
-    """Download and prepare datasets"""
-    
-    def __init__(self, data_dir="data"):
+    """Download and prepare datasets."""
+
+    def __init__(self, data_dir: str = "data"):
         self.data_dir = Path(data_dir)
         self.data_dir.mkdir(exist_ok=True)
-        
-    def download_imdb(self, max_samples=25000):
-        """Download IMDB movie reviews"""
-        print("\n" + "="*60)
+
+    # ------------------------------------------------------------------
+    # Real datasets
+    # ------------------------------------------------------------------
+
+    def download_imdb(self, max_samples: int = 25000) -> Path | None:
+        """Download IMDB movie reviews (train/test)."""
+        print("\n" + "=" * 60)
         print("DOWNLOADING IMDB DATASET")
-        print("="*60)
-        
+        print("=" * 60)
+
         dataset = load_dataset("imdb")
-        
         output_dir = self.data_dir / "imdb"
         output_dir.mkdir(exist_ok=True)
-        
-        # Save train split
-        train_texts = []
-        train_labels = []
-        
-        for i, example in enumerate(dataset['train']):
-            if i >= max_samples:
-                break
-            train_texts.append(example['text'])
-            train_labels.append(example['label'])
-        
-        with open(output_dir / 'train.json', 'w') as f:
-            json.dump({
-                'texts': train_texts,
-                'labels': train_labels
-            }, f)
-        
-        # Save test split
-        test_texts = []
-        test_labels = []
-        
-        for i, example in enumerate(dataset['test']):
-            if i >= max_samples:
-                break
-            test_texts.append(example['text'])
-            test_labels.append(example['label'])
-        
-        with open(output_dir / 'test.json', 'w') as f:
-            json.dump({
-                'texts': test_texts,
-                'labels': test_labels
-            }, f)
-        
+
+        def _split(name: str) -> tuple[list[str], list[int]]:
+            texts = []
+            labels = []
+            for i, ex in enumerate(dataset[name]):
+                if i >= max_samples:
+                    break
+                texts.append(ex["text"])
+                labels.append(ex["label"])
+            return texts, labels
+
+        train_texts, train_labels = _split("train")
+        test_texts, test_labels = _split("test")
+
+        with open(output_dir / "train.json", "w", encoding="utf-8") as f:
+            json.dump({"texts": train_texts, "labels": train_labels}, f)
+        with open(output_dir / "test.json", "w", encoding="utf-8") as f:
+            json.dump({"texts": test_texts, "labels": test_labels}, f)
+
         print(f"✓ Downloaded {len(train_texts)} training examples")
         print(f"✓ Downloaded {len(test_texts)} test examples")
         print(f"✓ Saved to: {output_dir}")
-        
         return output_dir
-    
-    def download_snips(self):
-        """Download SNIPS intent dataset"""
-        print("\n" + "="*60)
+
+    def download_snips(self) -> Path | None:
+        """Download SNIPS intents from a known HuggingFace mirror."""
+        print("\n" + "=" * 60)
         print("DOWNLOADING SNIPS DATASET")
-        print("="*60)
-        
-        try:
-            dataset = load_dataset("snips_built_in_intents")
-            
-            output_dir = self.data_dir / "snips"
-            output_dir.mkdir(exist_ok=True)
-            
-            # Process train split
-            train_texts = [ex['text'] for ex in dataset['train']]
-            train_labels = [ex['label'] for ex in dataset['train']]
-            
-            with open(output_dir / 'train.json', 'w', encoding='utf-8') as f:
-                json.dump({
-                    'texts': train_texts,
-                    'labels': train_labels
-                }, f)
-            
-            # Check if test split exists
-            if 'test' in dataset:
-                test_texts = [ex['text'] for ex in dataset['test']]
-                test_labels = [ex['label'] for ex in dataset['test']]
-            else:
-                # Create test split from train (20%)
-                split_idx = int(len(train_texts) * 0.8)
-                test_texts = train_texts[split_idx:]
-                test_labels = train_labels[split_idx:]
-                train_texts = train_texts[:split_idx]
-                train_labels = train_labels[:split_idx]
-                
-                # Re-save train split
-                with open(output_dir / 'train.json', 'w', encoding='utf-8') as f:
-                    json.dump({
-                        'texts': train_texts,
-                        'labels': train_labels
-                    }, f)
-            
-            with open(output_dir / 'test.json', 'w', encoding='utf-8') as f:
-                json.dump({
-                    'texts': test_texts,
-                    'labels': test_labels
-                }, f)
-            
-            print(f"✓ Downloaded {len(train_texts)} training examples")
-            print(f"✓ Downloaded {len(test_texts)} test examples")
-            print(f"✓ Saved to: {output_dir}")
-            
-            return output_dir
-            
-        except Exception as e:
-            print(f"Error loading SNIPS dataset: {e}")
-            print("Using alternative SNIPS source...")
-            # Fallback to manual data
-            self._create_snips_fallback()
-            return
-    
-    def _create_snips_fallback(self):
-        """Create SNIPS-like dataset fallback"""
+        print("=" * 60)
+
+        dataset = None
+        for name in _SNIPS_CANDIDATES:
+            try:
+                dataset = load_dataset(name)
+                print(f"  Loaded from mirror: {name}")
+                break
+            except Exception as exc:  # noqa: BLE001 — surface every mirror failure
+                print(f"  Mirror '{name}' failed: {exc}")
+
+        if dataset is None:
+            print("All SNIPS mirrors failed; falling back to the curated offline dataset.")
+            return self._create_snips_fallback()
+
         output_dir = self.data_dir / "snips"
         output_dir.mkdir(exist_ok=True)
-        
-        # Sample data for each intent
+
+        # Some mirrors ship a single 'train' split; handle either case.
+        train_texts = [ex["text"] for ex in dataset["train"]]
+        train_labels = [ex["label"] for ex in dataset["train"]]
+
+        if "test" in dataset:
+            test_texts = [ex["text"] for ex in dataset["test"]]
+            test_labels = [ex["label"] for ex in dataset["test"]]
+        else:
+            # Hold out the last 20% as a real test set with no overlap.
+            split_idx = int(len(train_texts) * 0.8)
+            test_texts = train_texts[split_idx:]
+            test_labels = train_labels[split_idx:]
+            train_texts = train_texts[:split_idx]
+            train_labels = train_labels[:split_idx]
+
+        with open(output_dir / "train.json", "w", encoding="utf-8") as f:
+            json.dump({"texts": train_texts, "labels": train_labels}, f)
+        with open(output_dir / "test.json", "w", encoding="utf-8") as f:
+            json.dump({"texts": test_texts, "labels": test_labels}, f)
+
+        print(f"✓ Downloaded {len(train_texts)} training examples")
+        print(f"✓ Downloaded {len(test_texts)} test examples")
+        print(f"✓ Saved to: {output_dir}")
+        return output_dir
+
+    def _create_snips_fallback(self) -> Path | None:
+        """Offline SNIPS-like fallback used when every HF mirror fails."""
+        output_dir = self.data_dir / "snips"
+        output_dir.mkdir(exist_ok=True)
+
+        # 6 intents (matches the canonical SNIPS NLU subset commonly used in
+        # tutorials — PlayMusic, GetWeather, BookRestaurant, SearchCreativeWork,
+        # AddToPlaylist, RateBook).
         intents_data = {
-            'PlayMusic': [
+            "PlayMusic": [
                 "play some music",
                 "play my favorite song",
                 "start playing music",
                 "can you play a song",
                 "play something from the Beatles",
             ],
-            'GetWeather': [
+            "GetWeather": [
                 "what's the weather like",
                 "how's the weather today",
                 "will it rain tomorrow",
                 "what's the forecast",
                 "is it going to be sunny",
             ],
-            'BookRestaurant': [
+            "BookRestaurant": [
                 "book a table for two",
                 "make a reservation at a restaurant",
                 "find me a place to eat",
                 "reserve a table for dinner",
                 "book a restaurant for tonight",
             ],
-            'SearchCreativeWork': [
+            "SearchCreativeWork": [
                 "find me a good movie",
                 "search for books by Stephen King",
                 "show me romantic comedies",
                 "find songs by Taylor Swift",
                 "search for action movies",
             ],
-            'AddToPlaylist': [
+            "AddToPlaylist": [
                 "add this to my playlist",
                 "save this song to my favorites",
                 "add to my workout playlist",
                 "put this in my playlist",
                 "save to my music collection",
             ],
-            'RateBook': [
+            "RateBook": [
                 "rate this book 5 stars",
                 "give this book a good review",
                 "I rate this book highly",
@@ -195,261 +182,176 @@ class DatasetDownloader:
                 "rate this book positively",
             ],
         }
-        
-        # Create training data
-        train_texts = []
-        train_labels = []
-        
+
+        train_texts: list[str] = []
+        train_labels: list[str] = []
         for label, texts in intents_data.items():
             train_texts.extend(texts)
             train_labels.extend([label] * len(texts))
-        
-        with open(output_dir / 'train.json', 'w') as f:
-            json.dump({
-                'texts': train_texts,
-                'labels': train_labels
-            }, f)
-        
-        # Create test data (subset)
-        test_texts = [t for i, t in enumerate(train_texts) if i % 5 == 0]
-        test_labels = [l for i, l in enumerate(train_labels) if i % 5 == 0]
-        
-        with open(output_dir / 'test.json', 'w') as f:
-            json.dump({
-                'texts': test_texts,
-                'labels': test_labels
-            }, f)
-        
+
+        # Use the LAST 20% of training rows as the held-out test set, and
+        # remove them from training. This avoids the train/test overlap that
+        # the previous modulo-based sampling produced.
+        split_idx = int(len(train_texts) * 0.8)
+        test_texts = train_texts[split_idx:]
+        test_labels = train_labels[split_idx:]
+        train_texts = train_texts[:split_idx]
+        train_labels = train_labels[:split_idx]
+
+        with open(output_dir / "train.json", "w", encoding="utf-8") as f:
+            json.dump({"texts": train_texts, "labels": train_labels}, f)
+        with open(output_dir / "test.json", "w", encoding="utf-8") as f:
+            json.dump({"texts": test_texts, "labels": test_labels}, f)
+
         print(f"✓ Created {len(train_texts)} training examples")
         print(f"✓ Created {len(test_texts)} test examples")
         print(f"✓ Saved to: {output_dir}")
-    
-    def download_banking77(self):
-        """Download Banking77 intent dataset"""
-        print("\n" + "="*60)
+        return output_dir
+
+    def download_banking77(self) -> Path | None:
+        """Download Banking77 intents."""
+        print("\n" + "=" * 60)
         print("DOWNLOADING BANKING77 DATASET")
-        print("="*60)
-        
+        print("=" * 60)
+
         try:
             dataset = load_dataset("banking77")
-        except Exception as e:
-            print(f"ERROR: Could not download Banking77 dataset: {e}")
+        except Exception as exc:
+            print(f"ERROR: Could not download Banking77 dataset: {exc}")
             traceback.print_exc()
             return None
-        
+
         output_dir = self.data_dir / "banking77"
         output_dir.mkdir(exist_ok=True)
-        
-        # Save train split
-        train_texts = [ex['text'] for ex in dataset['train']]
-        train_labels = [ex['label'] for ex in dataset['train']]
-        
-        with open(output_dir / 'train.json', 'w') as f:
-            json.dump({
-                'texts': train_texts,
-                'labels': train_labels
-            }, f)
-        
-        # Save test split
-        test_texts = [ex['text'] for ex in dataset['test']]
-        test_labels = [ex['label'] for ex in dataset['test']]
-        
-        with open(output_dir / 'test.json', 'w') as f:
-            json.dump({
-                'texts': test_texts,
-                'labels': test_labels
-            }, f)
-        
+
+        train_texts = [ex["text"] for ex in dataset["train"]]
+        train_labels = [ex["label"] for ex in dataset["train"]]
+        test_texts = [ex["text"] for ex in dataset["test"]]
+        test_labels = [ex["label"] for ex in dataset["test"]]
+
+        with open(output_dir / "train.json", "w", encoding="utf-8") as f:
+            json.dump({"texts": train_texts, "labels": train_labels}, f)
+        with open(output_dir / "test.json", "w", encoding="utf-8") as f:
+            json.dump({"texts": test_texts, "labels": test_labels}, f)
+
         print(f"✓ Downloaded {len(train_texts)} training examples")
         print(f"✓ Downloaded {len(test_texts)} test examples")
         print(f"✓ Saved to: {output_dir}")
-        
         return output_dir
-    
-    def download_wikitext(self, version='wikitext-2-v1'):
-        """Download WikiText for text generation"""
-        print("\n" + "="*60)
+
+    def download_wikitext(self, version: str = "wikitext-2-v1") -> Path | None:
+        """Download WikiText for text generation."""
+        print("\n" + "=" * 60)
         print(f"DOWNLOADING WIKITEXT DATASET ({version})")
-        print("="*60)
-        
-        dataset = load_dataset("wikitext", version)
-        
+        print("=" * 60)
+
+        try:
+            dataset = load_dataset("wikitext", version)
+        except Exception as exc:
+            print(f"ERROR: Could not download WikiText {version}: {exc}")
+            traceback.print_exc()
+            return None
+
         output_dir = self.data_dir / "wikitext"
         output_dir.mkdir(exist_ok=True)
-        
-        # Save train split
-        with open(output_dir / 'train.txt', 'w') as f:
-            for example in dataset['train']:
-                if example['text'].strip():
-                    f.write(example['text'] + '\n')
-        
-        # Save validation split
-        with open(output_dir / 'validation.txt', 'w') as f:
-            for example in dataset['validation']:
-                if example['text'].strip():
-                    f.write(example['text'] + '\n')
-        
-        # Save test split
-        with open(output_dir / 'test.txt', 'w') as f:
-            for example in dataset['test']:
-                if example['text'].strip():
-                    f.write(example['text'] + '\n')
-        
+
+        for split, filename in [("train", "train.txt"),
+                                ("validation", "validation.txt"),
+                                ("test", "test.txt")]:
+            with open(output_dir / filename, "w", encoding="utf-8") as f:
+                for ex in dataset[split]:
+                    text = ex["text"].strip()
+                    if text:
+                        f.write(text + "\n")
+
         print(f"✓ Downloaded WikiText {version}")
         print(f"✓ Saved to: {output_dir}")
-        
         return output_dir
-    
-    def create_sample_datasets(self):
-        """Create small sample datasets for quick testing"""
-        print("\n" + "="*60)
+
+    # ------------------------------------------------------------------
+    # Synthetic samples (delegated)
+    # ------------------------------------------------------------------
+
+    def create_sample_datasets(self) -> None:
+        """
+        Generate the synthetic sample datasets used by the intro notebooks.
+
+        Delegates to ``generate_synthetic_data`` so there is one canonical
+        source of sample data in this repo. The synthetic generator writes to
+        the same paths (``data/intent_samples``, ``data/sentiment_samples``,
+        ``data/text_gen_samples``, ``data/rag_samples``) and also produces the
+        LoRA chat-format files.
+        """
+        import generate_synthetic_data  # local module, same directory as this script
+
+        print("\n" + "=" * 60)
         print("CREATING SAMPLE DATASETS")
-        print("="*60)
-        
-        # Intent classification samples
-        intent_dir = self.data_dir / "intent_samples"
-        intent_dir.mkdir(exist_ok=True)
-        
-        intent_data = {
-            'texts': [
-                "hello there",
-                "hi how are you",
-                "good morning",
-                "what time is it",
-                "when is the meeting",
-                "how do I do this",
-                "please turn on the lights",
-                "start the music",
-                "open the door",
-            ],
-            'labels': [
-                'greeting', 'greeting', 'greeting',
-                'question', 'question', 'question',
-                'command', 'command', 'command'
-            ]
-        }
-        
-        with open(intent_dir / 'data.json', 'w') as f:
-            json.dump(intent_data, f, indent=2)
-        
-        print(f"✓ Created intent samples: {intent_dir}")
-        
-        # Sentiment analysis samples
-        sentiment_dir = self.data_dir / "sentiment_samples"
-        sentiment_dir.mkdir(exist_ok=True)
-        
-        sentiment_data = {
-            'texts': [
-                "This movie was absolutely fantastic!",
-                "I loved every minute of it",
-                "Best film I've seen this year",
-                "Terrible waste of time",
-                "Very disappointed with this product",
-                "Would not recommend",
-                "It was okay, nothing special",
-                "Average movie, not bad not great",
-            ],
-            'labels': [
-                'positive', 'positive', 'positive',
-                'negative', 'negative', 'negative',
-                'neutral', 'neutral'
-            ]
-        }
-        
-        with open(sentiment_dir / 'data.json', 'w') as f:
-            json.dump(sentiment_data, f, indent=2)
-        
-        print(f"✓ Created sentiment samples: {sentiment_dir}")
-        
-        # Text generation samples
-        text_gen_dir = self.data_dir / "text_gen_samples"
-        text_gen_dir.mkdir(exist_ok=True)
-        
-        with open(text_gen_dir / 'corpus.txt', 'w') as f:
-            f.write("""The quick brown fox jumps over the lazy dog.
-Machine learning is a subset of artificial intelligence.
-Natural language processing helps computers understand human language.
-Deep learning uses neural networks with multiple layers.
-Apple Silicon provides unified memory architecture for ML acceleration.
-MLX is Apple's framework for machine learning on Apple Silicon.
-""")
-        
-        print(f"✓ Created text generation samples: {text_gen_dir}")
+        print("=" * 60)
+
+        generate_synthetic_data.generate_intent_data()
+        generate_synthetic_data.generate_sentiment_data()
+        generate_synthetic_data.generate_text_corpus()
+        generate_synthetic_data.generate_rag_knowledge_base()
+        generate_synthetic_data.generate_lora_chat_data()
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description="Download NLP datasets")
-    
-    parser.add_argument('--all', action='store_true',
-                       help='Download all datasets')
-    parser.add_argument('--sentiment', action='store_true',
-                       help='Download sentiment analysis datasets')
-    parser.add_argument('--intent', action='store_true',
-                       help='Download intent classification datasets')
-    parser.add_argument('--generation', action='store_true',
-                       help='Download text generation datasets')
-    
-    # Individual datasets
-    parser.add_argument('--imdb', action='store_true',
-                       help='Download IMDB reviews')
-    parser.add_argument('--snips', action='store_true',
-                       help='Download SNIPS intents')
-    parser.add_argument('--banking77', action='store_true',
-                       help='Download Banking77 intents')
-    parser.add_argument('--wikitext', action='store_true',
-                       help='Download WikiText')
-    parser.add_argument('--samples', action='store_true',
-                       help='Create small sample datasets')
-    
-    parser.add_argument('--data-dir', default='data',
-                       help='Directory to save datasets (default: data)')
-    parser.add_argument('--max-samples', type=int, default=25000,
-                       help='Maximum samples for large datasets (default: 25000)')
-    
+    parser.add_argument("--all", action="store_true", help="Download all datasets")
+    parser.add_argument("--sentiment", action="store_true", help="Download sentiment datasets")
+    parser.add_argument("--intent", action="store_true", help="Download intent datasets")
+    parser.add_argument("--generation", action="store_true", help="Download text generation datasets")
+
+    parser.add_argument("--imdb", action="store_true", help="Download IMDB reviews")
+    parser.add_argument("--snips", action="store_true", help="Download SNIPS intents")
+    parser.add_argument("--banking77", action="store_true", help="Download Banking77 intents")
+    parser.add_argument("--wikitext", action="store_true", help="Download WikiText")
+    parser.add_argument("--samples", action="store_true", help="Create small sample datasets")
+
+    parser.add_argument("--data-dir", default="data", help="Directory to save datasets (default: data)")
+    parser.add_argument("--max-samples", type=int, default=25000,
+                        help="Maximum samples for large datasets (default: 25000 — IMDB's full size)")
+
     args = parser.parse_args()
-    
-    # If no arguments, show help
+
     if len(sys.argv) == 1:
         parser.print_help()
         sys.exit(0)
-    
+
     downloader = DatasetDownloader(args.data_dir)
-    
-    print("="*60)
+
+    print("=" * 60)
     print("DATASET DOWNLOADER")
-    print("="*60)
+    print("=" * 60)
     print(f"Data directory: {args.data_dir}")
     print(f"Max samples: {args.max_samples}")
-    
-    # Download based on flags
+
     if args.all or args.samples:
         downloader.create_sample_datasets()
-    
     if args.all or args.sentiment or args.imdb:
         downloader.download_imdb(max_samples=args.max_samples)
-    
     if args.all or args.intent or args.snips:
         downloader.download_snips()
-    
     if args.all or args.intent or args.banking77:
         downloader.download_banking77()
-    
     if args.all or args.generation or args.wikitext:
         downloader.download_wikitext()
-    
-    print("\n" + "="*60)
+
+    print("\n" + "=" * 60)
     print("✓ DOWNLOAD COMPLETE!")
-    print("="*60)
+    print("=" * 60)
     print(f"\nDatasets saved to: {args.data_dir}/")
     print("\nAvailable datasets:")
-    
+
     data_path = Path(args.data_dir)
     if data_path.exists():
         for subdir in sorted(data_path.iterdir()):
             if subdir.is_dir():
-                files = list(subdir.glob('*.json')) + list(subdir.glob('*.txt'))
+                files = list(subdir.glob("*.json")) + list(subdir.glob("*.txt"))
                 print(f"  • {subdir.name}/ ({len(files)} files)")
-    
+        for f in sorted(data_path.glob("*.jsonl")):
+            print(f"  • {f.name}")
+
     print("\nNext steps:")
     print("  1. Start notebooks: cd notebooks && jupyter notebook")
     print("  2. Open 00_Overview.ipynb to get started")
