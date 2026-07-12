@@ -15,6 +15,7 @@ import argparse
 import json
 import os
 import sys
+import traceback
 from pathlib import Path
 
 # Add parent directory to path
@@ -231,8 +232,9 @@ class DatasetDownloader:
         
         try:
             dataset = load_dataset("banking77")
-        except:
-            print("ERROR: Could not download Banking77 dataset")
+        except Exception as e:
+            print(f"ERROR: Could not download Banking77 dataset: {e}")
+            traceback.print_exc()
             return None
         
         output_dir = self.data_dir / "banking77"
