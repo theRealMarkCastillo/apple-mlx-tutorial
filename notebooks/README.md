@@ -284,7 +284,7 @@ X_subset = X[:100]
 y_subset = y[:100]
 ```
 
-## �� Interactive Features
+## 🎓 Interactive Features
 
 Each notebook includes:
 - ✅ Step-by-step explanations
@@ -319,4 +319,4 @@ By completing these notebooks, you will:
 
 Open `00_Overview.ipynb` and let's begin your NLP journey!
 
-Happy learning! ��
+Happy learning! 🎓

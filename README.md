@@ -155,7 +155,7 @@ All training is now done through the Jupyter notebooks. Each notebook includes:
 apple-mlx-tutorial/
 ├── .venv/                           # Virtual environment
 ├── notebooks/                       # 📓 Interactive Jupyter notebooks
-│   ├── mlx_nlp_utils.py             # Consolidated model code (300+ lines)
+│   ├── mlx_nlp_utils.py             # Consolidated model code (460+ lines)
 │   ├── README.md                    # Notebooks guide
 │   ├── 00_Overview.ipynb            # Quick intro & demos (15 min)
 │   ├── 01_Intent_Classification.ipynb    # Complete tutorial (60 min)
