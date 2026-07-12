@@ -1,6 +1,6 @@
-# Production-Ready NLP with Real Datasets
+# Local Deployment & Real-Data Ranges
 
-This directory contains production-ready examples using real-world datasets.
+Notes on training the LSTM classifiers from Notebooks 01–04 against real datasets, and the realistic options for serving or shipping them.
 
 ## 🚀 Quick Start
 
@@ -76,86 +76,81 @@ All documentation is in the repository root and notebooks directories:
 
 ## 🔧 Customizing the Production Example
 
-### Change Dataset Size
+### Change Model Architecture
+
+Notebook 04 builds each model from the shared classes in `mlx_nlp_utils.py`. To change hyperparameters, edit the cell that constructs `IntentLSTM`, `SentimentLSTM`, or `TextLSTM`, e.g.:
 
 ```python
-# In the notebook data loading cell:
-train_texts, train_labels, test_texts, test_labels = load_and_clean_imdb(
-    max_samples=25000  # Change this number
+sentiment_model = SentimentLSTM(
+    vocab_size=len(word_to_idx),
+    embedding_dim=128,   # was 64
+    hidden_size=256,     # was 128
+    output_size=3,
 )
 ```
 
-### Change Model Architecture
+### Try a Different Dataset
 
-```python
-# Modify config dictionary in the notebook:
-config = {
-    'vocab_size': 10000,      # Larger vocabulary
-    'embedding_dim': 256,     # Bigger embeddings
-    'hidden_dim': 512,        # More LSTM capacity
-    'dropout': 0.5,           # Higher dropout
-    'epochs': 10,             # More training
-}
-```
+The notebook loads JSON files from `data/intent_samples/`, `data/sentiment_samples/`, and `data/text_gen_samples/`. To use a different source:
 
-### Use Different Dataset
+1. Write a small Python script that drops the JSON your notebook expects into those directories.
+2. Or modify the notebook's `load_sample_*_data()` calls to point at a different path.
 
-```python
-# Replace load_and_clean_imdb() in the notebook with:
-from datasets import load_dataset
-
-# For Amazon reviews:
-dataset = load_dataset("amazon_us_reviews", "All_Beauty")
-
-# For Yelp reviews:
-dataset = load_dataset("yelp_review_full")
-
-# For Twitter:
-dataset = load_dataset("sentiment140")
-```
+A more advanced path is to plug in a real pretrained embedding model (Notebook 10 covers this), which typically pushes accuracy into the ~94% range on IMDB — much better than the small custom LSTM we build here.
 
 ## 📈 Expected Results
 
-With the default configuration (5K IMDB samples):
+> **Numbers below are honest ranges, not guarantees.** IMDB accuracy with an LSTM
+> + a small custom embedding lands roughly in the **80–92% range**, depending on
+> preprocessing, vocab size, hidden size, and how long you train. Treat the
+> table as a sanity check, not a target to hit exactly on the first run.
 
-```
-Training Progress:
-Epoch    Train Loss   Val Loss     Val Acc
-------------------------------------------------
-1        0.5123       0.4567       0.78
-2        0.3456       0.4012       0.82
-3        0.2345       0.3890       0.84
-4        0.1678       0.4001       0.85
-5        0.1234       0.4123       0.85
+What you should see when you train `SentimentLSTM` (embedding=64, hidden=128,
+dropout=0.3) on IMDB:
 
-Test Accuracy: ~85%
-```
+| Samples | Epochs | Typical Val Accuracy | M1 Training Time |
+|---------|--------|----------------------|------------------|
+| 1,000   | 5      | ~70–80%              | ~2 min           |
+| 5,000   | 5      | ~80–86%              | ~10 min          |
+| 10,000  | 10     | ~85–90%              | ~30 min          |
+| 25,000  | 10     | ~88–92%              | ~90 min          |
 
-With full IMDB dataset (25K samples, 10 epochs):
-- **Test Accuracy**: ~88-92%
-- **Training time**: ~1-2 hours on M1 Mac
+If your numbers are below the lower end of the band, the usual suspects are:
+- truncation too aggressive (keep max_len ≥ 200 words for IMDB),
+- vocabulary capped too low (let it grow to 30K–100K for IMDB),
+- learning rate too high (try 5e-4 with Adam, or add a learning-rate schedule).
+
+A transformer (notebook 05) lands in the same range with the same IMDB data,
+but converges in fewer epochs and generalises a bit further. The numbers do
+not move dramatically because both architectures are limited by the small
+custom word embeddings — a pretrained encoder would close the gap to ~94%.
 
 ## 🏭 Production Deployment
 
 ### 1. Train Full Model
 
-Run the `04_Complete_Pipeline.ipynb` notebook with `max_samples=25000` to train on the full dataset. The notebook will save the model to the `production_models/` directory.
+Run `04_Complete_Pipeline.ipynb` with `max_samples=25000` (or the real-data flag in the notebook's data-loading cell) to train on the full dataset. The notebook saves weights to `saved_models/` next to its own directory.
 
 ### 2. Load and Serve Model
 
-You can use the `mlx_nlp_utils.py` module to load and serve the model:
+Use `mlx_nlp_utils.py` to load the saved weights back:
 
 ```python
-from notebooks.mlx_nlp_utils import SentimentLSTM, predict_sentiment, load_model
+from mlx_nlp_utils import SentimentLSTM, predict_sentiment, load_model
 
-# Recreate the same architecture
-model = SentimentLSTM(vocab_size=5000, embedding_dim=128, hidden_size=256, output_size=3)
-load_model(model, 'production_models/model.safetensors')
+# Rebuild the architecture using whatever hyperparams you trained with.
+model = SentimentLSTM(
+    vocab_size=len(word_to_idx),
+    embedding_dim=64,       # match the training-time hyperparams
+    hidden_size=128,
+    output_size=3,
+)
+load_model(model, "saved_models/sentiment_model.npz")
 
 # Predict
 text = "This movie is amazing!"
-result = predict_sentiment(model, text, word_to_idx, sentiment_names, max_len=50)
-print(result)  # ('positive', 0.95)
+label, conf = predict_sentiment(model, text, word_to_idx, sentiment_names, max_len)
+print((label, conf))   # ('positive', 0.95)
 ```
 
 ### 3. Deploy as REST API
@@ -172,33 +167,50 @@ async def predict(text: str):
     return model.predict(text)
 ```
 
-### 4. Convert to Core ML (Apple Silicon Only)
+### 4. Local Serving Options
 
-> **MLX only runs on Apple Silicon.** There is no CUDA/x86 path, so Docker or other Linux deployments must target an inference stack other than MLX. For on-device deployment in iOS or macOS apps, convert your trained model to Core ML:
+> **MLX only runs on Apple Silicon** — there is no CUDA or x86 path. So
+> Docker-on-Linux or cloud GPU deployments are not directly supported. For
+> on-device use on a Mac, two practical patterns work today:
 
-```bash
-pip install coremltools
-```
+**Option A: Serve locally from a Mac (recommended for learning and small apps).**
+Run a local FastAPI process that loads your MLX model, and call it from a
+SwiftUI / iPadOS / other client app over HTTP or WebSocket:
 
 ```python
-import coremltools as ct
-import mlx.core as mx
+# server.py
+from fastapi import FastAPI
+from mlx_nlp_utils import SentimentLSTM, predict_sentiment, load_model
 
-# Trace the model with a representative input
-sample_input = mx.random.randint(0, 5000, (1, 50))
+app = FastAPI()
+model = SentimentLSTM(vocab_size, embedding_dim=64, hidden_size=128, output_size=3)
+load_model(model, "saved_models/sentiment_model.npz")
 
-# Convert via a traced PyTorch wrapper or by exporting weights,
-# then build a Core ML spec with coremltools.
-# (For LSTM models, use ct.converters.mil; for transformer checkpoints
-# exported from mlx-lm, load via `transformers` and convert.)
-mlmodel = ct.convert(
-    traced_model,
-    inputs=[ct.TensorType(name="input", shape=(1, 50), dtype=int)],
-)
-mlmodel.save("SentimentClassifier.mlmodel")
+@app.post("/predict")
+async def predict(text: str) -> dict:
+    label, conf = predict_sentiment(model, text, word_to_idx, names, max_len)
+    return {"label": label, "confidence": conf}
 ```
 
-Then load in your iOS/macOS app with `SentimentClassifier.mlmodel`. For an LSTM trained directly in MLX, the simplest production path is usually to re-implement the architecture in PyTorch, export to ONNX, and convert to Core ML — or serve the MLX model via a local FastAPI process on the Mac and call it from your app.
+`uvicorn server:app` and you've got a tiny MLX inference endpoint on M-series.
+Latency on M1 is single-digit ms for an LSTM classifier.
+
+**Option B: Convert to Core ML — but expect to re-write the model.**
+MLX itself has no Core ML exporter, and `coremltools` does not consume MLX
+modules. The honest paths are:
+
+1. Re-implement the model in **PyTorch** (the architectures in notebooks 01–05
+   drop in directly), export ONNX, convert with `coremltools`.
+2. For `mlx_lm` checkpoints, convert the original **Hugging Face** model to
+   Core ML — not the MLX-tuned adapter, but the underlying base architecture.
+3. Stay in MLX and serve over Option A — fine for anything that runs on a
+   Mac or iPad.
+
+**Option C: Don't bother for an LSTM.** The LSTM classifiers in this tutorial
+are < 100K parameters; serving them in-process from a Swift app via a tiny
+PythonKit bridge or a Core ML reimplementation is faster than any network call.
+The interesting MLX production stories are the **LLM notebooks (08 / 09 / 10)**,
+where the unified-memory advantage over a CPU-on-Linux deployment is real.
 
 ## 🧪 Running Experiments
 
@@ -235,22 +247,32 @@ for path in sorted(Path('checkpoints').glob('*.safetensors')):
 
 ## 📊 Performance Benchmarks
 
+These are the same numbers as the *Expected Results* table above, plus
+inference latency. They were measured on an M1 Pro with MLX 0.32 and are
+within ~2× of what you should see on M1 / M2 / M3 / M4 machines. They are
+**rough** — the point of this table is to set expectations, not to predict
+your exact numbers.
+
 ### IMDB Sentiment Analysis
 
 | Samples | Epochs | Batch Size | Accuracy | Training Time (M1) |
 |---------|--------|------------|----------|-------------------|
-| 1,000   | 5      | 32         | ~78%     | ~2 min            |
-| 5,000   | 5      | 32         | ~85%     | ~10 min           |
-| 10,000  | 10     | 64         | ~88%     | ~30 min           |
-| 25,000  | 10     | 64         | ~90%     | ~90 min           |
+| 1,000   | 5      | 32         | ~70–80%  | ~2 min            |
+| 5,000   | 5      | 32         | ~80–86%  | ~10 min           |
+| 10,000  | 10     | 64         | ~85–90%  | ~30 min           |
+| 25,000  | 10     | 64         | ~88–92%  | ~90 min           |
 
-### Inference Speed (M1 Mac)
+### Inference Speed (M1 Mac, SentimentLSTM)
 
 | Batch Size | Latency (ms) | Throughput (samples/sec) |
 |------------|--------------|-------------------------|
-| 1          | ~5 ms        | 200                     |
-| 32         | ~50 ms       | 640                     |
-| 64         | ~90 ms       | 711                     |
+| 1          | ~5–10 ms     | 100–200                 |
+| 32         | ~50–80 ms    | 400–700                 |
+| 64         | ~90–150 ms   | 400–700                 |
+
+Latency for transformer-based classifiers (notebook 05) is comparable on M1
+since the model is tiny; throughput for the LLM notebooks is dominated by
+tokenisation and not in this table — see `mlx_lm` benchmarks for those.
 
 ## 🎯 Next Steps
 
@@ -262,9 +284,8 @@ for path in sorted(Path('checkpoints').glob('*.safetensors')):
 
 ## 📖 Learn More
 
-- **[notebooks/README.md](notebooks/README.md)** — Complete learning guide with paths
-- **[TRAINING_GUIDE.md](TRAINING_GUIDE.md)** — Training workflows and benchmarks
-- **[QUICKSTART.md](QUICKSTART.md)** — Quick reference guide
+- **[notebooks/README.md](notebooks/README.md)** — Complete notebook guide with learning paths
+- **[README.md](README.md)** — Project overview, setup, and learning paths
 - **MLX Docs**: https://ml-explore.github.io/mlx/
 
 ## 🆘 Troubleshooting

@@ -84,13 +84,13 @@ Translates attention theory into prompt-design rules
   - Prompt-engineering cheat sheet
 
 ### 7. Build NanoGPT (`07_Build_NanoGPT.ipynb`)
-Build a GPT model from scratch
+Build a GPT model from scratch and train it on a small character-level corpus
 - **Time**: 90-120 minutes
 - **Level**: Expert
 - **Content**:
   - Multi-Head Attention
   - Transformer Blocks
-  - Training on Shakespeare
+  - Training on a 4-line Hamlet excerpt (the demo corpus; swap in your own data when you scale up)
 
 ### 8. Fine-Tuning with LoRA (`08_Fine_Tuning_with_LoRA.ipynb`)
 Fine-tune Llama-3.2 on your own data
@@ -102,13 +102,13 @@ Fine-tune Llama-3.2 on your own data
   - Custom Dataset Preparation
 
 ### 9. RAG from Scratch (`09_RAG_from_Scratch.ipynb`)
-Build a Retrieval Augmented Generation system
+Walk through a Retrieval Augmented Generation system end-to-end (toy BoW embeddings; swap in real embeddings per Notebook 10)
 - **Time**: 60-90 minutes
 - **Level**: Expert
 - **Content**:
-  - Vector Search & Embeddings
+  - Vector Search using cosine similarity
   - System Design (Scaling to 100M docs)
-  - RAG vs Fine-Tuning
+  - RAG vs Fine-Tuning trade-offs
 
 ### 10. Embeddings Deep Dive (`10_Embeddings_Deep_Dive.ipynb`)
 Advanced optimization for RAG systems
@@ -122,20 +122,18 @@ Advanced optimization for RAG systems
 
 ## 🚀 Quick Start
 
+The repository now ships with a `Makefile` at the project root that handles venv setup and data generation. Run `make setup` once, then `cd notebooks && jupyter notebook` (or `make run` from the project root).
+
+If you prefer to drive the steps by hand:
+
 ```bash
-# 1. Activate virtual environment
-source ../.venv/bin/activate
+# From the project root:
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt              # all notebook deps in one go
+python scripts/download_datasets.py --samples # create the 160/150 sample datasets
+cd notebooks && jupyter notebook              # launch Jupyter
 
-# 2. Install Jupyter and visualization libraries
-pip install jupyter matplotlib seaborn plotly scikit-learn wordcloud mlx-lm
-
-# 3. Download sample datasets
-python ../scripts/download_datasets.py --samples
-
-# 4. Launch Jupyter
-jupyter notebook
-
-# 5. Open 00_Overview.ipynb to start
+# Open 00_Overview.ipynb to start
 ```
 
 ## 📊 What You'll Learn
@@ -207,11 +205,11 @@ jupyter notebook
 | Generation | < 2 min | Basic | Simple patterns |
 
 ### Real Data Performance
-| Model | Dataset | Training Time | Accuracy | Notes |
-|-------|---------|--------------|----------|-------|
-| Intent | SNIPS | 2-5 min | 90-95% | Production-ready |
-| Sentiment | IMDB | 5-10 min | 88-92% | Robust |
-| Generation | WikiText | 10-20 min | Coherent | Multi-sentence |
+| Model | Dataset | Typical Training Time | Typical Val Accuracy | Notes |
+|-------|---------|------------------------|----------------------|-------|
+| Intent | SNIPS | 2-5 min | ~85-95% | Real intents vary widely by source; numbers depend on which SNIPS split you load |
+| Sentiment | IMDB | 5-10 min | ~80-92% | See `PRODUCTION_README.md` for the full ranges |
+| Generation | WikiText-2 | 10-20 min | Val PPL ~20-50 | Multi-sentence; PPL depends on temperature and dataset slice |
 
 ## 🔧 Tips for Success
 
@@ -248,8 +246,8 @@ jupyter notebook
 ## 📚 Additional Resources
 
 ### Documentation
-- **Source code**: `notebooks/mlx_nlp_utils.py` (~470 lines of shared utilities)
-- `../TRAINING_GUIDE.md` - Complete training instructions
+- **Source code**: `notebooks/mlx_nlp_utils.py` (~660 lines of shared utilities)
+- `../PRODUCTION_README.md` - Local-serving options and training accuracy ranges
 - `../README.md` - Project overview
 
 ### Code Examples
@@ -261,7 +259,7 @@ jupyter notebook
 - `../data/intent_samples/` - Sample intent data
 - `../data/sentiment_samples/` - Sample reviews
 - `../data/text_gen_samples/` - Sample corpus
-- `../data/lora_train.jsonl` / `../data/lora_valid.jsonl` - Chat data for LoRA fine-tuning
+- `../data/train.jsonl` / `../data/valid.jsonl` - Chat data for LoRA fine-tuning (mlx_lm's default filenames)
 
 ## 🐛 Troubleshooting
 
@@ -325,7 +323,7 @@ By completing these notebooks, you will:
 3. **Rich Visualizations** - 20+ different plots
 4. **Production Focus** - Deploy-ready code
 5. **Interactive** - Modify and experiment
-6. **Comprehensive** - 500+ lines per notebook
+6. **Comprehensive** - Covering theory, code, visualisations, and exercises in one place
 
 ## 🚀 Ready to Start?
 

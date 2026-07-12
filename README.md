@@ -10,7 +10,7 @@ This project showcases three practical NLP use cases for chatbots, trained on **
 
 1. **Intent Classification** - Classify user commands into categories (trained on SNIPS & Banking77 datasets)
 2. **Sentiment Analysis** - Detect emotions in messages (trained on IMDB movie reviews)
-3. **Text Generation** - Generate responses and provide autocomplete suggestions (trained on WikiText corpus)
+3. **Text Generation** - Generate responses and provide autocomplete suggestions (trained on WikiText-2 + a small sample corpus)
 
 All models are built using MLX, leveraging the power of Apple Silicon for efficient on-device text processing. The project includes **50,000+ real training examples** with automated dataset downloading and preprocessing.
 
@@ -56,10 +56,10 @@ Input: "This is terrible"
 
 ### 3. Text Generation
 - Generates text continuations from seed text
-- **Real dataset**: WikiText-2 (36K+ Wikipedia articles, 100M tokens)
-- **Sample data**: Small corpus for quick testing
+- **Real dataset**: WikiText-2 (~36K articles, ~2M tokens)
+- **Sample data**: A 5×-replicated MLX-description corpus for quick testing
 - Temperature-controlled sampling
-- LSTM-based sequence-to-sequence generation
+- LSTM-based character-level generation
 
 **Example Usage:**
 ```
@@ -100,13 +100,30 @@ pip install -r requirements.txt
 ### Interactive Jupyter Notebooks (Recommended)
 
 ```bash
-# 1. Activate the virtual environment
+# One-shot setup (creates .venv, installs deps, generates sample data)
+make setup
+
+# Then launch Jupyter
+make run                  # opens notebooks/00_Overview.ipynb
+```
+
+Equivalent manual flow:
+
+```bash
+# 1. Create & activate the virtual environment
+python3 -m venv .venv
 source .venv/bin/activate
 
-# 2. Navigate to notebooks folder
+# 2. Install dependencies
+pip install -r requirements.txt
+
+# 3. Generate the small sample datasets used by notebooks 00–03
+python scripts/download_datasets.py --samples
+
+# 4. Navigate to notebooks folder
 cd notebooks
 
-# 3. Start Jupyter
+# 5. Start Jupyter
 jupyter notebook
 ```
 
@@ -124,14 +141,25 @@ Open any notebook:
 - ✅ Hands-on exercises
 - ✅ No external file dependencies
 
+### Make Targets
+
+| Command          | What it does                                                  |
+|------------------|---------------------------------------------------------------|
+| `make setup`     | `venv + install + sample data` — first-run convenience       |
+| `make run`       | Launch Jupyter inside the venv                                |
+| `make setup-real`| Download the real datasets (SNIPS, IMDB, Banking77, WikiText) |
+| `make download`  | Alias for `make setup-real`                                   |
+| `make clean-data`| Remove downloaded real datasets (sample data is kept)         |
+| `make clean`     | Remove `.venv` plus all generated artefacts                  |
+
 ### Training with Real Datasets
 
 **Download datasets:**
 ```bash
-# Download all real datasets (IMDB 50K, SNIPS 16K+, Banking77 13K, WikiText 36K)
-python scripts/download_datasets.py --all
+# All real datasets via the Makefile (creates data/imdb, data/snips, …)
+make setup-real
 
-# Or download specific datasets
+# Or directly via the Python script
 python scripts/download_datasets.py --imdb     # Sentiment analysis
 python scripts/download_datasets.py --snips    # Intent classification
 python scripts/download_datasets.py --wikitext # Text generation
@@ -148,7 +176,7 @@ All training is now done through the Jupyter notebooks. Each notebook includes:
 - **IMDB**: 50K movie reviews (sentiment)
 - **SNIPS**: 16K+ voice assistant queries (6 intents)
 - **Banking77**: 13K banking queries (77 intents)
-- **WikiText-2**: 36K articles, 100M tokens (generation)
+- **WikiText-2**: ~36K articles, ~2M tokens (generation)
 
 **See [notebooks/README.md](notebooks/README.md) for complete learning guide**
 
@@ -156,38 +184,41 @@ All training is now done through the Jupyter notebooks. Each notebook includes:
 
 ```
 apple-mlx-tutorial/
-├── .venv/                           # Virtual environment
+├── .venv/                           # Virtual environment (created by make)
+├── Makefile                         # One-shot setup / run / clean
 ├── notebooks/                       # 📓 Interactive Jupyter notebooks
-│   ├── mlx_nlp_utils.py             # Consolidated model code (460+ lines)
-│   ├── README.md                    # Notebooks guide
+│   ├── mlx_nlp_utils.py             # Consolidated model code (~660 lines)
+│   ├── README.md                    # Notebooks guide & learning paths
 │   ├── 00_Overview.ipynb            # Quick intro & demos (15 min)
 │   ├── 01_Intent_Classification.ipynb    # Complete tutorial (60 min)
 │   ├── 02_Sentiment_Analysis.ipynb       # Complete tutorial (75 min)
 │   ├── 03_Text_Generation.ipynb          # Complete tutorial (90 min)
 │   ├── 04_Complete_Pipeline.ipynb        # Full integration (120 min)
-│   ├── 05_Transformer_Classifier.ipynb   # Bridge: Transformer classifier
-│   ├── 06_Attention_Mechanism.ipynb      # Advanced: Attention theory
-│   ├── 06b_Prompt_Engineering.ipynb      # Advanced: Prompting techniques
-│   ├── 07_Build_NanoGPT.ipynb            # Advanced: Build Transformer
-│   ├── 08_Fine_Tuning_with_LoRA.ipynb    # Pro: Fine-tune LLMs
-│   ├── 09_RAG_from_Scratch.ipynb         # Architect: RAG System Design
-│   └── 10_Embeddings_Deep_Dive.ipynb     # Expert: Embedding internals
+│   ├── 05_Transformer_Classifier.ipynb   # Bridge: LSTM → Transformer (45 min)
+│   ├── 06_Attention_Mechanism.ipynb      # Attention math (45 min)
+│   ├── 06b_Prompt_Engineering.ipynb      # Prompt engineering from attention (45 min)
+│   ├── 07_Build_NanoGPT.ipynb            # Build GPT from scratch, train on Shakespeare-style corpus (90 min)
+│   ├── 08_Fine_Tuning_with_LoRA.ipynb    # Fine-tune Llama-3.2 with LoRA (60 min)
+│   ├── 09_RAG_from_Scratch.ipynb         # RAG walkthrough with toy BoW + real-HF corpus (60 min)
+│   └── 10_Embeddings_Deep_Dive.ipynb     # Real embeddings, t-SNE, eval (60 min)
 ├── data/                            # Datasets directory
-│   ├── intent_samples/              # Sample intent data (160 examples)
-│   ├── sentiment_samples/           # Sample sentiment data (150 reviews)
-│   ├── text_gen_samples/            # Sample text corpus
-│   ├── imdb/                        # IMDB movie reviews (50K)
-│   ├── snips/                       # SNIPS intents (16K+)
-│   ├── banking77/                   # Banking77 intents (13K)
-│   └── wikitext/                    # WikiText corpus (36K articles)
+│   ├── intent_samples/              # 160 sample intent examples
+│   ├── sentiment_samples/           # 150 sample sentiment reviews
+│   ├── text_gen_samples/            # Small text-generation corpus
+│   ├── rag_samples/                 # 50-doc RAG knowledge base
+│   ├── train.jsonl                  # 800 LoRA chat records (mlx_lm default name)
+│   ├── valid.jsonl                  # 200 LoRA chat records (mlx_lm default name)
+│   ├── imdb/                        # IMDB movie reviews (50K) — opt-in download
+│   ├── snips/                       # SNIPS intents (16K+) — opt-in download
+│   ├── banking77/                   # Banking77 intents (13K) — opt-in download
+│   └── wikitext/                    # WikiText corpus (36K articles) — opt-in
 ├── scripts/                         # Utility scripts
-│   ├── download_datasets.py         # Dataset downloader (Python)
-│   └── download_datasets.sh         # Dataset downloader (Shell)
+│   ├── download_datasets.py         # Dataset downloader (CLI: --all, --samples, …)
+│   ├── download_datasets.sh         # Thin shell wrapper over download_datasets.py
+│   └── generate_synthetic_data.py   # Single source of truth for sample data
 ├── requirements.txt                 # Python dependencies
 ├── README.md                        # This file
-├── QUICKSTART.md                    # Quick reference guide
-├── TRAINING_GUIDE.md                # Training documentation
-└── PRODUCTION_README.md             # Production deployment guide
+└── PRODUCTION_README.md             # Local deployment & real-data ranges
 ```
 
 ## 🔧 Technical Details
@@ -200,20 +231,20 @@ All models are implemented in the notebooks with full explanations. You can find
 - Embedding dimension: 32
 - LSTM hidden size: 64
 - 3 output classes
-- Training: 50 epochs with SGD
+- Training: 30 epochs with Adam (lr 0.01, see notebook 01)
 
 **Sentiment Analyzer:**
 - Embedding dimension: 64
 - LSTM hidden size: 128
 - Dropout: 0.3
 - 3 output classes
-- Training: 100 epochs with Adam
+- Training: 100 epochs with Adam (lr 0.001, see notebook 02)
 
 **Text Generator:**
 - Embedding dimension: 128
 - LSTM hidden size: 256
-- Sequence length: 5 words
-- Training: 200 epochs with Adam
+- Sequence length (training): 5 characters (sliding window)
+- Training: 200 epochs with Adam (lr 0.001, see notebook 03)
 
 ### MLX Framework Benefits
 
@@ -254,21 +285,6 @@ All models are implemented in the notebooks with full explanations. You can find
 - Add model versioning and A/B testing
 - Deploy REST API with FastAPI/Flask
 
-## 📝 Example Training Output
-
-```
-Training in Jupyter Notebook:
-
-Epoch 10/50 - Loss: 0.8234 - Accuracy: 0.6667
-Epoch 20/50 - Loss: 0.4521 - Accuracy: 0.8333
-Epoch 30/50 - Loss: 0.2341 - Accuracy: 0.9333
-Epoch 40/50 - Loss: 0.1234 - Accuracy: 0.9667
-Epoch 50/50 - Loss: 0.0823 - Accuracy: 1.0000
-
-[Training curves visualization displayed]
-[Confusion matrix heatmap displayed]
-```
-
 ## 🤝 Contributing
 
 Feel free to extend this project with:
@@ -280,74 +296,34 @@ Feel free to extend this project with:
 
 ## 📖 Educational Resources
 
-**🎓 Interactive Learning with Jupyter Notebooks**
+Each notebook is a self-contained mini-tutorial with theory, working code, and visualizations. See **[notebooks/README.md](notebooks/README.md)** for the per-notebook rundown, learning paths, and time estimates.
 
-### Learning Notebooks (Recommended)
-**Visual, hands-on learning with 20+ types of visualizations:**
-- **[notebooks/00_Overview.ipynb](notebooks/00_Overview.ipynb)** - Quick intro with demos of all 3 techniques (15 min)
-- **[notebooks/01_Intent_Classification.ipynb](notebooks/01_Intent_Classification.ipynb)** - Full tutorial with training curves, confusion matrices (60 min)
-- **[notebooks/02_Sentiment_Analysis.ipynb](notebooks/02_Sentiment_Analysis.ipynb)** - Word clouds, ROC curves (75 min)
-- **[notebooks/03_Text_Generation.ipynb](notebooks/03_Text_Generation.ipynb)** - Perplexity, temperature comparison (90 min)
-- **[notebooks/04_Complete_Pipeline.ipynb](notebooks/04_Complete_Pipeline.ipynb)** - End-to-end chatbot (120 min)
-- **[notebooks/05_Transformer_Classifier.ipynb](notebooks/05_Transformer_Classifier.ipynb)** - Bridge: LSTM to Transformer (45 min)
-- **[notebooks/06_Attention_Mechanism.ipynb](notebooks/06_Attention_Mechanism.ipynb)** - The "brain" of Transformers (45 min)
-- **[notebooks/06b_Prompt_Engineering.ipynb](notebooks/06b_Prompt_Engineering.ipynb)** - Zero/Few-shot, CoT, top-k/p sampling (45 min)
-- **[notebooks/07_Build_NanoGPT.ipynb](notebooks/07_Build_NanoGPT.ipynb)** - Build a GPT model from scratch (90 min)
-- **[notebooks/08_Fine_Tuning_with_LoRA.ipynb](notebooks/08_Fine_Tuning_with_LoRA.ipynb)** - Fine-tune LLMs on Apple Silicon (60 min)
-- **[notebooks/09_RAG_from_Scratch.ipynb](notebooks/09_RAG_from_Scratch.ipynb)** - Architect-level RAG system design (60 min)
-- **[notebooks/10_Embeddings_Deep_Dive.ipynb](notebooks/10_Embeddings_Deep_Dive.ipynb)** - Embedding internals, similarity, t-SNE (60 min)
-
-**📘 See [notebooks/README.md](notebooks/README.md)** for learning paths, installation, and expected results.
-
-### Documentation Guides
-
-Quick reference for specific topics:
-- **[QUICKSTART.md](QUICKSTART.md)** - Quick reference guide
-- **[TRAINING_GUIDE.md](TRAINING_GUIDE.md)** - Training workflows and benchmarks  
-- **[PRODUCTION_README.md](PRODUCTION_README.md)** - Production deployment guide
+| Doc | What it covers |
+|---|---|
+| **[PRODUCTION_README.md](PRODUCTION_README.md)** | Honest ranges for IMDB accuracy; local-serving options (FastAPI) and the MLX→Core ML reality. |
+| **[notebooks/README.md](notebooks/README.md)** | Per-notebook content & visualisations, learning paths, troubleshooting. |
 
 ### Learning Path Recommendations
 
 **🔰 Total Beginner? (6 hours)**
-1. Start with **notebooks/00_Overview.ipynb** (15 min) - Visual introduction
-2. Work through **notebooks/01_Intent_Classification.ipynb** (60 min) - Complete tutorial
-3. Continue with **notebooks/02_Sentiment_Analysis.ipynb** (75 min) - Build on classification
-4. Explore **notebooks/03_Text_Generation.ipynb** (90 min) - Most advanced technique
-5. Finish with **notebooks/04_Complete_Pipeline.ipynb** (120 min) - Full integration
-6. Bridge: **notebooks/05_Transformer_Classifier.ipynb** (45 min) - Replace LSTM with Transformer
-7. **Advanced:** Dive into **notebooks/06_Attention_Mechanism.ipynb** and **07_Build_NanoGPT.ipynb** to understand Transformers.
-8. **Pro:** Learn to fine-tune LLMs with **notebooks/08_Fine_Tuning_with_LoRA.ipynb**.
-9. **Architect:** Master System Design with **notebooks/09_RAG_from_Scratch.ipynb**.
-10. **Expert:** Deep dive into embeddings with **notebooks/10_Embeddings_Deep_Dive.ipynb**.
+1. Start with `notebooks/00_Overview.ipynb` (15 min) — visual introduction
+2. `notebooks/01_Intent_Classification.ipynb` (60 min) — complete tutorial
+3. `notebooks/02_Sentiment_Analysis.ipynb` (75 min) — build on classification
+4. `notebooks/03_Text_Generation.ipynb` (90 min) — the trickier objective
+5. `notebooks/04_Complete_Pipeline.ipynb` (120 min) — full integration
+6. `notebooks/05_Transformer_Classifier.ipynb` (45 min) — replace LSTM with a Transformer
+7. **Advanced:** `notebooks/06_Attention_Mechanism.ipynb` and `notebooks/07_Build_NanoGPT.ipynb` to understand Transformers end-to-end.
+8. **Pro:** `notebooks/08_Fine_Tuning_with_LoRA.ipynb` — fine-tune a small Llama.
+9. **Architect:** `notebooks/09_RAG_from_Scratch.ipynb` — toy RAG walkthrough.
+10. **Expert:** `notebooks/10_Embeddings_Deep_Dive.ipynb` — sentence-embedding trade-offs (note: this one jumps out of MLX into `sentence-transformers`).
 
-**Each notebook is 100% self-contained** - no jumping between files!
+Each notebook is self-contained — the only side-effects are local `data/` and `saved_models/` files.
 
 **🚀 Advanced Developer?**
 1. Jump directly to notebooks based on your interest
-2. Review **notebooks/mlx_nlp_utils.py** for model implementations
+2. Review `notebooks/mlx_nlp_utils.py` for the shared model implementations
 3. Download real datasets with `python scripts/download_datasets.py --all`
 4. Build your own project using the notebook code as reference
-
-### Quick Start Guide
-
-**For Learning:**
-```bash
-cd notebooks && jupyter notebook
-# Open 00_Overview.ipynb
-```
-
-**For Production Training:**
-```bash
-python scripts/download_datasets.py --all  # Download datasets
-cd notebooks && jupyter notebook           # Train in notebooks
-```
-
-**Total Learning Content:**
-- 5 complete notebooks with embedded theory
-- 28+ visualization types
-- 50+ diagrams and examples
-- Beginner through advanced exercises
-- 6 hours of guided learning
 
 ## 📄 License
 

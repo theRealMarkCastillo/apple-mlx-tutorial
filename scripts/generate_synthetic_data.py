@@ -273,11 +273,11 @@ def generate_lora_chat_data(
     """
     Generate chat-format data for the LoRA fine-tuning notebook.
 
-    Writes ``data/lora_train.jsonl`` and ``data/lora_valid.jsonl`` in OpenAI-
-    style ``{"messages": [...]}`` format. The dataset is large enough to
-    demonstrate the LoRA training mechanics end-to-end on Apple Silicon while
-    still being fast enough to finish in a few minutes on a 4-bit Llama-3.2
-    base model.
+    Writes ``data/train.jsonl`` and ``data/valid.jsonl`` (the filenames
+    ``mlx_lm.lora`` expects out of the box) in OpenAI-style
+    ``{"messages": [...]}`` format. The dataset is large enough to demonstrate
+    the LoRA training mechanics end-to-end on Apple Silicon while still being
+    fast enough to finish in a few minutes on a 4-bit Llama-3.2 base model.
     """
     _seed_random(seed)
     print(f"Generating synthetic LoRA chat data ({n_train} train / {n_val} val)...")
@@ -291,8 +291,8 @@ def generate_lora_chat_data(
     for _ in range(n_val):
         val_records.append(_sample_chat(rng))
 
-    train_path = Path(output_dir) / "lora_train.jsonl"
-    val_path = Path(output_dir) / "lora_valid.jsonl"
+    train_path = Path(output_dir) / "train.jsonl"
+    val_path = Path(output_dir) / "valid.jsonl"
     train_path.parent.mkdir(parents=True, exist_ok=True)
     with open(train_path, "w", encoding="utf-8") as f:
         for record in train_records:

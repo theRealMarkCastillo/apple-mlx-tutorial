@@ -101,14 +101,22 @@ class IntentLSTM(nn.Module):
         return logits
 
 
-def create_vocabulary(texts: list[str]) -> dict[str, int]:
-    """Build a word vocabulary with reserved <PAD>=0 and <UNK>=1."""
+def create_vocabulary(texts: list[str]) -> tuple[dict[str, int], dict[str, int]]:
+    """Build a word vocabulary with reserved ``<PAD>=0`` and ``<UNK>=1``.
+
+    Returns ``(vocab, word_to_idx)`` — both dicts share the same entries but are
+    returned separately to mirror the symmetric vocabulary / index mapping used
+    by ``texts_to_sequences`` and the pipeline notebooks. ``vocab`` documents
+    what was learned; ``word_to_idx`` is the lookup used at train/inference.
+    """
     vocab = {"<PAD>": _PAD_IDX, "<UNK>": _UNK_IDX}
     for text in texts:
         for word in text.lower().split():
             if word not in vocab:
                 vocab[word] = len(vocab)
-    return vocab
+    # vocab and word_to_idx map the same keys to the same indices, so a
+    # shallow dict copy is the right semantics here.
+    return vocab, dict(vocab)
 
 
 def preprocess_text(text: str) -> list[str]:
@@ -117,6 +125,31 @@ def preprocess_text(text: str) -> list[str]:
     for char in ".,!?;:":
         text = text.replace(char, " ")
     return text.split()
+
+
+def train_val_split(
+    items: list,
+    val_fraction: float = 0.2,
+    seed: int = 0,
+) -> tuple[list, list]:
+    """Shuffle ``items`` deterministically and split into (train, val).
+
+    A fixed seed makes notebook output reproducible. ``val_fraction`` is the
+    proportion held out for validation; the rest goes to training.
+
+    >>> train, val = train_val_split([0, 1, 2, 3, 4], val_fraction=0.4, seed=0)
+    >>> sorted(train), sorted(val)
+    ([0, 2, 3], [1, 4])
+    """
+    if not 0.0 < val_fraction < 1.0:
+        raise ValueError(f"val_fraction must be in (0, 1); got {val_fraction}")
+    rng = np.random.default_rng(seed)
+    indices = np.arange(len(items))
+    rng.shuffle(indices)
+    cut = int(round(len(items) * (1.0 - val_fraction)))
+    train_idx = indices[:cut].tolist()
+    val_idx = indices[cut:].tolist()
+    return [items[i] for i in train_idx], [items[i] for i in val_idx]
 
 
 def texts_to_sequences(texts: list[str], word_to_idx: dict) -> list[list[int]]:
@@ -141,21 +174,65 @@ def pad_sequences(sequences: list[list[int]], max_len: int) -> np.ndarray:
     return padded
 
 
+def scaled_dot_product_attention(query, key, value, mask=None):
+    """
+    Reference implementation of scaled dot-product attention.
+
+    Computes ``softmax(QK^T / sqrt(d_k)) @ V``. The optional ``mask`` is an
+    *additive* mask (0 for unmasked positions, a very large negative for
+    masked positions); ``None`` means "no masking". This is the canonical
+    reference used by notebooks 06 and 06b — both import it from here so
+    each notebook does not have to redefine it.
+
+    Args:
+        query: (..., seq_len_q, d_k)
+        key:   (..., seq_len_k, d_k)
+        value: (..., seq_len_v, d_v)  ``seq_len_v == seq_len_k``
+        mask:  (..., seq_len_q, seq_len_k) additive mask, optional
+
+    Returns:
+        (output, attention_weights)
+    """
+    d_k = query.shape[-1]
+    scores = mx.matmul(query, mx.transpose(key, (0, 2, 1)))
+    scores = scores / np.sqrt(d_k)
+    if mask is not None:
+        scores = scores + (mask * -1e9)
+    attn_weights = mx.softmax(scores, axis=-1)
+    output = mx.matmul(attn_weights, value)
+    return output, attn_weights
+
+
 def train_model(
     model: nn.Module,
     X: mx.array,
     y: mx.array,
     epochs: int = 50,
     learning_rate: float = 0.01,
-) -> tuple[nn.Module, dict[str, list[float]]]:
+    X_val: mx.array | None = None,
+    y_val: mx.array | None = None,
+) -> tuple[nn.Module, dict[str, list]]:
     """
     Generic training loop for MLX models.
 
-    Uses Adam and the lazy-evaluation pattern; ``mx.eval`` is called every step to
-    force the parameter and optimizer-state updates to materialize.
+    Uses Adam and the lazy-evaluation pattern; ``mx.eval`` is called every step
+    to force the parameter and optimizer-state updates to materialize. The
+    forward pass automatically adapts: ``TextLSTM`` emits
+    ``(batch, seq, vocab)`` and that branch is collapsed to ``(batch, vocab)``
+    on the last timestep when targets are 1-D class indices.
+
+    Args:
+        X, y: training arrays. ``y`` may be class indices (``int32`` of shape
+            ``(N,)``) or, for the text-generation branch, float logits targets
+            (this loop always uses cross-entropy, so pass class indices).
+        X_val, y_val: optional held-out arrays. When both are provided,
+            ``val_loss`` and ``val_accuracy`` are appended to ``history`` each
+            epoch so notebooks can plot a real generalization curve.
 
     Returns:
-        The trained model and a history dict with 'loss' and 'accuracy' lists.
+        The trained model and a history dict containing ``loss`` / ``accuracy``
+        lists, plus ``val_loss`` / ``val_accuracy`` when validation data is
+        supplied.
     """
     if hasattr(model, "train"):
         model.train()
@@ -172,7 +249,23 @@ def train_model(
 
     loss_and_grad_fn = nn.value_and_grad(model, loss_fn)
 
-    history = {"loss": [], "accuracy": []}
+    history: dict[str, list] = {"loss": [], "accuracy": []}
+    has_val = X_val is not None and y_val is not None
+    if has_val:
+        history["val_loss"] = []
+        history["val_accuracy"] = []
+        # Materialise the held-out arrays up front so per-step ``mx.eval`` only
+        # touches the small validation graph.
+        mx.eval(X_val, y_val)
+
+    def _forward_metrics(X_in, y_in):
+        out = model(X_in)
+        if len(out.shape) == 3 and len(y_in.shape) == 1:
+            out = out[:, -1, :]
+        preds = mx.argmax(out, axis=-1)
+        acc = mx.mean(preds == y_in)
+        loss = mx.mean(nn.losses.cross_entropy(out, y_in))
+        return float(loss), float(acc)
 
     for epoch in range(epochs):
         loss, grads = loss_and_grad_fn(model, X, y)
@@ -183,17 +276,31 @@ def train_model(
         # in memory before we read metrics below.
         mx.eval(model.parameters(), optimizer.state)
 
-        logits = model(X)
-        if len(logits.shape) == 3 and len(y.shape) == 1:
-            logits = logits[:, -1, :]
-        predictions = mx.argmax(logits, axis=-1)
-        accuracy = mx.mean(predictions == y)
+        train_loss, train_acc = _forward_metrics(X, y)
+        history["loss"].append(train_loss)
+        history["accuracy"].append(train_acc)
 
-        history["loss"].append(float(loss))
-        history["accuracy"].append(float(accuracy))
+        val_loss = 0.0
+        val_acc = 0.0
+        if has_val:
+            # Evaluate at inference (dropout off, etc.); restore training
+            # mode afterwards so the next optimiser step still updates.
+            if hasattr(model, "eval"):
+                model.eval()
+            val_loss, val_acc = _forward_metrics(X_val, y_val)
+            history["val_loss"].append(val_loss)
+            history["val_accuracy"].append(val_acc)
+            if hasattr(model, "train"):
+                model.train()
 
         if (epoch + 1) % 10 == 0:
-            print(f"Epoch {epoch + 1:3d}/{epochs} - Loss: {loss:.4f} - Accuracy: {accuracy:.4f}")
+            msg = (
+                f"Epoch {epoch + 1:3d}/{epochs} - "
+                f"Loss: {train_loss:.4f} - Accuracy: {train_acc:.4f}"
+            )
+            if has_val:
+                msg += f" - Val Loss: {val_loss:.4f} - Val Accuracy: {val_acc:.4f}"
+            print(msg)
 
     if hasattr(model, "eval"):
         model.eval()
@@ -231,7 +338,12 @@ def predict_intent(
 # ============================================================================
 
 class SentimentLSTM(nn.Module):
-    """LSTM-based sentiment analyzer with dropout. Dropout is disabled in eval mode."""
+    """LSTM-based sentiment analyzer with dropout.
+
+    ``nn.Dropout`` already checks ``self.training`` internally, so passing the
+    LSTM output through it is enough to disable dropout at inference time
+    (which ``predict_*`` helpers trigger via ``model.eval()``).
+    """
 
     def __init__(self, vocab_size: int, embedding_dim: int, hidden_size: int, output_size: int):
         super().__init__()
@@ -244,10 +356,7 @@ class SentimentLSTM(nn.Module):
         embedded = self.embedding(x)
         lstm_out, _ = self.lstm(embedded)
         last_output = lstm_out[:, -1, :]
-        # ``model.training`` flips via ``model.train()`` / ``model.eval()``,
-        # so dropout is skipped at inference time.
-        if self.training:
-            last_output = self.dropout(last_output)
+        last_output = self.dropout(last_output)
         logits = self.linear(last_output)
         return logits
 
@@ -337,18 +446,27 @@ def generate_text(
     idx_to_char: dict,
     length: int = 100,
     temperature: float = 1.0,
+    window: int = 5,
 ) -> str:
-    """Sample ``length`` characters of text continuation from ``seed``."""
+    """Sample ``length`` characters of text continuation from ``seed``.
+
+    The model is unrolled one character at a time, each step conditioned on the
+    last ``window`` characters seen so far. If the model was trained with a
+    different context length, pass the matching ``window`` here.
+
+    Args:
+        window: number of previous characters fed to the model on each step.
+                Must match the sequence length used by ``text_to_sequences``
+                when the model was trained. Defaults to 5 (the value used in
+                notebooks 00 / 03).
+    """
     if hasattr(model, "eval"):
         model.eval()
     if not char_to_idx:
         raise ValueError("char_to_idx is empty — call create_char_vocab() first.")
+    if window < 1:
+        raise ValueError(f"window must be >= 1, got {window}")
 
-    # Use the most recent ``seq_length`` chars when possible; fall back to
-    # padding when the seed is shorter than the expected window.
-    seq_length = max(1, len(char_to_idx) - 2)  # heuristic; the caller should pass an explicit seq_length
-    # In practice we only need the last 5 chars for the LSTM used in this tutorial.
-    window = 5
     generated = seed
     current_seq = [char_to_idx.get(c, _UNK_IDX) for c in seed[-window:]]
     current_seq = ([_PAD_IDX] * (window - len(current_seq))) + current_seq
@@ -399,7 +517,11 @@ def _find_data_file(filename: str) -> Path | None:
 
 
 def load_sample_intent_data() -> tuple[list[str], list[str], dict[str, int], dict[str, int]]:
-    """Load sample intent classification data from ``data/intent_samples/data.json``."""
+    """Load sample intent classification data from ``data/intent_samples/data.json``.
+
+    Returns ``(texts, labels, vocab, intent2idx)``. ``vocab`` maps token -> id
+    and ``intent2idx`` maps label string -> class index.
+    """
     data_path = _find_data_file("intent_samples/data.json")
 
     if data_path:
@@ -419,13 +541,16 @@ def load_sample_intent_data() -> tuple[list[str], list[str], dict[str, int], dic
                   "question", "question", "question",
                   "command", "command", "command"]
 
-    vocab = create_vocabulary(texts)
+    vocab, _word_to_idx = create_vocabulary(texts)
     intent2idx = {"greeting": 0, "question": 1, "command": 2}
     return texts, labels, vocab, intent2idx
 
 
 def load_sample_sentiment_data() -> tuple[list[str], list[str], dict[str, int], dict[str, int]]:
-    """Load sample sentiment data from ``data/sentiment_samples/data.json``."""
+    """Load sample sentiment data from ``data/sentiment_samples/data.json``.
+
+    Returns ``(texts, labels, vocab, sentiment2idx)``.
+    """
     data_path = _find_data_file("sentiment_samples/data.json")
 
     if data_path:
@@ -445,7 +570,7 @@ def load_sample_sentiment_data() -> tuple[list[str], list[str], dict[str, int], 
                   "negative", "negative", "negative",
                   "neutral", "neutral", "neutral"]
 
-    vocab = create_vocabulary(texts)
+    vocab, _word_to_idx = create_vocabulary(texts)
     sentiment2idx = {"negative": 0, "neutral": 1, "positive": 2}
     return texts, labels, vocab, sentiment2idx
 
