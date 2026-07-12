@@ -38,8 +38,8 @@ This notebook demonstrates the full production pipeline:
 ### 3. Advanced Production: RAG & Fine-Tuning
 
 For modern LLM workflows, check out:
-- **07_Fine_Tuning_with_LoRA.ipynb**: Fine-tune Llama-3.2 on your own data
-- **08_RAG_from_Scratch.ipynb**: Build a production-ready RAG system with vector search
+- **08_Fine_Tuning_with_LoRA.ipynb**: Fine-tune Llama-3.2 on your own data
+- **09_RAG_from_Scratch.ipynb**: Build a production-ready RAG system with vector search
 
 ## 📊 What Datasets Are Available?
 
@@ -62,22 +62,17 @@ For modern LLM workflows, check out:
 
 ## 📚 Documentation
 
-See the comprehensive guides in `docs/`:
+All documentation is in the repository root and notebooks directories:
 
-1. **[DATASETS_AND_PREPROCESSING.md](docs/DATASETS_AND_PREPROCESSING.md)**
-   - How to download and load datasets
-   - Data cleaning pipelines
-   - Tokenization and formatting
-   - Quality filtering
-   - Data augmentation
+1. **Datasets & Preprocessing**
+   - See `notebooks/` for data loading in each notebook
+   - `scripts/download_datasets.py` for downloading real datasets
+   - `scripts/generate_synthetic_data.py` for generating synthetic data
 
-2. **[PRODUCTION_BEST_PRACTICES.md](docs/PRODUCTION_BEST_PRACTICES.md)**
-   - Model versioning
-   - Experiment tracking
-   - Performance optimization
-   - REST API deployment
-   - Monitoring and logging
-   - Security best practices
+2. **Production Deployment**
+   - Model saving/loading: `notebooks/mlx_nlp_utils.py` (`save_model`, `load_model`)
+   - REST API pattern: See example in `04_Complete_Pipeline.ipynb`
+   - Performance benchmarks: See training times below
 
 ## 🔧 Customizing the Production Example
 
@@ -151,41 +146,30 @@ Run the `04_Complete_Pipeline.ipynb` notebook with `max_samples=25000` to train 
 You can use the `mlx_nlp_utils.py` module to load and serve the model:
 
 ```python
-from notebooks.mlx_nlp_utils import SentimentPredictor, SentimentClassifier, Tokenizer
-import mlx.core as mx
+from notebooks.mlx_nlp_utils import SentimentLSTM, predict_sentiment, load_model
 
-# Load model
-model = SentimentClassifier(vocab_size=5000, embedding_dim=128, hidden_dim=256)
-model.load_weights('production_models/v_YYYYMMDD_HHMMSS/model.npz')
-
-# Load tokenizer
-tokenizer = Tokenizer()
-tokenizer.load('production_models/v_YYYYMMDD_HHMMSS/vocab.json')
-
-# Create predictor
-predictor = SentimentPredictor(model, tokenizer)
+# Recreate the same architecture
+model = SentimentLSTM(vocab_size=5000, embedding_dim=128, hidden_size=256, output_size=3)
+load_model(model, 'production_models/model.safetensors')
 
 # Predict
-result = predictor.predict("This movie is amazing!")
-print(result)
-# {'sentiment': 'Positive', 'confidence': 0.95, 'probabilities': {...}}
+text = "This movie is amazing!"
+result = predict_sentiment(model, text, word_to_idx, sentiment_names, max_len=50)
+print(result)  # ('positive', 0.95)
 ```
 
 ### 3. Deploy as REST API
 
-See `docs/PRODUCTION_BEST_PRACTICES.md` for complete REST API server code.
-
 ```python
 # Example using FastAPI
 from fastapi import FastAPI
-from notebooks.mlx_nlp_utils import SentimentPredictor
+from notebooks.mlx_nlp_utils import SentimentLSTM, load_model
 
 app = FastAPI()
-# ... setup predictor ...
 
 @app.post("/predict")
 async def predict(text: str):
-    return predictor.predict(text)
+    return model.predict(text)
 ```
 
 ### 4. Docker Deployment
@@ -219,24 +203,19 @@ for lr in learning_rates:
     # ... append metrics to results ...
 ```
 
-### Compare Model Versions
+### Compare Model Weights
 
-The `mlx_nlp_utils.py` module includes versioning tools:
+Compare saved model files by accuracy on a validation set:
 
 ```python
-from notebooks.mlx_nlp_utils import ModelVersioning
+from notebooks.mlx_nlp_utils import load_model, evaluate_model
 
-versioning = ModelVersioning()
-
-# List all versions
-versions = versioning.list_versions()
-for v in versions:
-    print(f"{v['version_id']}: Accuracy {v['metrics']['accuracy']:.2%}")
-
-# Find best
-best = max(versions, key=lambda v: v['metrics']['accuracy'])
-print(f"\nBest model: {best['version_id']}")
-print(f"Accuracy: {best['metrics']['accuracy']:.2%}")
+# Load and evaluate different checkpoints
+for path in sorted(Path('checkpoints').glob('*.safetensors')):
+    model = SentimentLSTM(vocab_size, embedding_dim, hidden_size, output_size)
+    load_model(model, path)
+    acc, _, _ = evaluate_model(model, X_val, y_val)
+    print(f"{path.stem}: {acc:.2%}")
 ```
 
 ## 📊 Performance Benchmarks
@@ -268,10 +247,10 @@ print(f"Accuracy: {best['metrics']['accuracy']:.2%}")
 
 ## 📖 Learn More
 
-- [Datasets & Preprocessing Guide](docs/DATASETS_AND_PREPROCESSING.md) - Complete data pipeline
-- [Production Best Practices](docs/PRODUCTION_BEST_PRACTICES.md) - Deployment & monitoring
-- [Sentiment Analysis Guide](docs/SENTIMENT_ANALYSIS_GUIDE.md) - Deep dive into sentiment
-- [MLX Framework Guide](docs/MLX_FRAMEWORK_GUIDE.md) - Optimize for Apple Silicon
+- **[notebooks/README.md](notebooks/README.md)** — Complete learning guide with paths
+- **[TRAINING_GUIDE.md](TRAINING_GUIDE.md)** — Training workflows and benchmarks
+- **[QUICKSTART.md](QUICKSTART.md)** — Quick reference guide
+- **MLX Docs**: https://ml-explore.github.io/mlx/
 
 ## 🆘 Troubleshooting
 

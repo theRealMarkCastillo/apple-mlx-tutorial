@@ -40,12 +40,12 @@ Generate text and suggest completions
 
 ### 4. **Advanced LLMs**
 Modern Transformer architectures
-- **Notebooks**: `05_Attention_Mechanism.ipynb`, `06_Build_NanoGPT.ipynb`
-- **Content**: Build GPT from scratch, understand Attention
+- **Notebooks**: `05_Transformer_Classifier.ipynb`, `06_Attention_Mechanism.ipynb`, `07_Build_NanoGPT.ipynb`
+- **Content**: Build Transformers from scratch, understand Attention
 
 ### 5. **Production Systems**
 Fine-tuning and RAG
-- **Notebooks**: `07_Fine_Tuning_with_LoRA.ipynb`, `08_RAG_from_Scratch.ipynb`
+- **Notebooks**: `08_Fine_Tuning_with_LoRA.ipynb`, `09_RAG_from_Scratch.ipynb`
 - **Content**: Fine-tune Llama-3.2, build Vector Search systems
 
 ## 🎯 Common Tasks

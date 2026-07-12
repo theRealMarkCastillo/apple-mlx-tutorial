@@ -55,7 +55,17 @@ End-to-end chatbot combining all techniques
   - Ensemble predictions
   - Deployment workflow
 
-### 5. Attention Mechanism (`05_Attention_Mechanism.ipynb`)
+### 5. Transformer Classifier (`05_Transformer_Classifier.ipynb`)
+Bridge from LSTMs to Transformers — build a Transformer-based classifier
+- **Time**: 45-60 minutes
+- **Level**: Intermediate
+- **Content**:
+  - Positional encoding from scratch
+  - Multi-Head Self-Attention in MLX
+  - LSTM vs Transformer comparison
+  - Attention weight visualization
+
+### 6. Attention Mechanism (`06_Attention_Mechanism.ipynb`)
 Understand the math behind Transformers
 - **Time**: 45-60 minutes
 - **Level**: Advanced
@@ -63,7 +73,7 @@ Understand the math behind Transformers
   - Attention heatmaps
   - Cross-attention patterns
 
-### 6. Build NanoGPT (`06_Build_NanoGPT.ipynb`)
+### 7. Build NanoGPT (`07_Build_NanoGPT.ipynb`)
 Build a GPT model from scratch
 - **Time**: 90-120 minutes
 - **Level**: Expert
@@ -72,7 +82,7 @@ Build a GPT model from scratch
   - Transformer Blocks
   - Training on Shakespeare
 
-### 7. Fine-Tuning with LoRA (`07_Fine_Tuning_with_LoRA.ipynb`)
+### 8. Fine-Tuning with LoRA (`08_Fine_Tuning_with_LoRA.ipynb`)
 Fine-tune Llama-3.2 on your own data
 - **Time**: 60-90 minutes
 - **Level**: Expert
@@ -81,7 +91,7 @@ Fine-tune Llama-3.2 on your own data
   - 4-bit Quantization
   - Custom Dataset Preparation
 
-### 8. RAG from Scratch (`08_RAG_from_Scratch.ipynb`)
+### 9. RAG from Scratch (`09_RAG_from_Scratch.ipynb`)
 Build a Retrieval Augmented Generation system
 - **Time**: 60-90 minutes
 - **Level**: Expert
@@ -90,7 +100,7 @@ Build a Retrieval Augmented Generation system
   - System Design (Scaling to 100M docs)
   - RAG vs Fine-Tuning
 
-### 9. Embeddings Deep Dive (`09_Embeddings_Deep_Dive.ipynb`)
+### 10. Embeddings Deep Dive (`10_Embeddings_Deep_Dive.ipynb`)
 Advanced optimization for RAG systems
 - **Time**: 60-90 minutes
 - **Level**: Expert
@@ -163,16 +173,18 @@ jupyter notebook
 4. Compare sample vs production
 
 ### Path 3: Project Builder (8+ hours)
-1. Complete all notebooks
+1. Complete notebooks 01-05 (LSTM + Transformer bridge)
 2. Build custom chatbot
 3. Deploy to production
 4. Add new features
 
 ### Path 4: LLM Specialist (10+ hours)
-1. Attention Mechanism (Notebook 05)
-2. Build NanoGPT (Notebook 06)
-3. Fine-Tuning with LoRA (Notebook 07)
-4. RAG from Scratch (Notebook 08)
+1. Transformer Classifier (Notebook 05) — bridge
+2. Attention Mechanism (Notebook 06)
+3. Build NanoGPT (Notebook 07)
+4. Fine-Tuning with LoRA (Notebook 08)
+5. RAG from Scratch (Notebook 09)
+6. Embeddings Deep Dive (Notebook 10)
 
 ## 📈 Expected Results
 
@@ -225,7 +237,7 @@ jupyter notebook
 ## 📚 Additional Resources
 
 ### Documentation
-- `../docs/` - 6,600+ lines of guides
+- **Source code**: `notebooks/mlx_nlp_utils.py` (460+ lines of shared utilities)
 - `../TRAINING_GUIDE.md` - Complete training instructions
 - `../README.md` - Project overview
 

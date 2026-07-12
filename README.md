@@ -1,6 +1,6 @@
-# MLX NLP Chatbot Demo
+# MLX NLP Tutorial
 
-A comprehensive demonstration of Natural Language Processing (NLP) capabilities for chatbots using **Apple's MLX framework**, optimized for Apple Silicon (M1/M2/M3) Neural Processing Units (NPU).
+A comprehensive hands-on tutorial for Natural Language Processing (NLP) using **Apple's MLX framework**, optimized for Apple Silicon (M1/M2/M3/M4) GPUs via Metal.
 
 ## 🎯 Project Overview
 
@@ -14,11 +14,11 @@ All models are built using MLX, leveraging the power of Apple Silicon for effici
 
 ## 🚀 Features
 
-### 1. Intent Classification (`intent_classifier.py`)
+### 1. Intent Classification
 - Classifies user input into predefined intents
 - Uses LSTM-based architecture
 - **Real datasets**: SNIPS (16K+ queries), Banking77 (13K banking intents)
-- **Sample data**: 9 examples for quick testing
+- **Sample data**: 162 examples for quick testing
 - Interactive prediction mode with confidence scores
 
 **Example Usage:**
@@ -33,11 +33,11 @@ Input: "Turn off the lights"
 → Intent: command (confidence: 88%)
 ```
 
-### 2. Sentiment Analysis (`sentiment_analysis.py`)
+### 2. Sentiment Analysis
 - Detects sentiment in user messages
 - Binary classification: positive, negative
 - **Real dataset**: IMDB movie reviews (50K labeled reviews)
-- **Sample data**: 8 reviews for quick testing
+- **Sample data**: 152 reviews for quick testing
 - LSTM with dropout for better generalization
 - Returns confidence scores with probabilities
 
@@ -52,9 +52,8 @@ Input: "This is terrible"
 → Probabilities: negative=90% neutral=7% positive=3%
 ```
 
-### 3. Text Generation (`text_generator.py`)
+### 3. Text Generation
 - Generates text continuations from seed text
-- Provides autocomplete suggestions
 - **Real dataset**: WikiText-2 (36K+ Wikipedia articles, 100M tokens)
 - **Sample data**: Small corpus for quick testing
 - Temperature-controlled sampling
@@ -72,8 +71,8 @@ Text: "thank you very"
 ## 📦 Installation
 
 ### Prerequisites
-- macOS with Apple Silicon (M1/M2/M3)
-- Python 3.8 or higher
+- macOS with Apple Silicon (M1/M2/M3/M4)
+- Python 3.10 or higher
 
 ### Setup
 
@@ -163,10 +162,12 @@ apple-mlx-tutorial/
 │   ├── 02_Sentiment_Analysis.ipynb       # Complete tutorial (75 min)
 │   ├── 03_Text_Generation.ipynb          # Complete tutorial (90 min)
 │   ├── 04_Complete_Pipeline.ipynb        # Full integration (120 min)
-│   ├── 05_Attention_Mechanism.ipynb      # Advanced: Attention theory
-│   ├── 06_Build_NanoGPT.ipynb            # Advanced: Build Transformer
-│   ├── 07_Fine_Tuning_with_LoRA.ipynb    # Pro: Fine-tune LLMs
-│   └── 08_RAG_from_Scratch.ipynb         # Architect: RAG System Design
+│   ├── 05_Transformer_Classifier.ipynb   # Bridge: Transformer classifier
+│   ├── 06_Attention_Mechanism.ipynb      # Advanced: Attention theory
+│   ├── 07_Build_NanoGPT.ipynb            # Advanced: Build Transformer
+│   ├── 08_Fine_Tuning_with_LoRA.ipynb    # Pro: Fine-tune LLMs
+│   ├── 09_RAG_from_Scratch.ipynb         # Architect: RAG System Design
+│   └── 10_Embeddings_Deep_Dive.ipynb     # Expert: Embedding internals
 ├── data/                            # Datasets directory
 │   ├── intent_samples/              # Sample intent data (9 examples)
 │   ├── sentiment_samples/           # Sample sentiment data (8 reviews)
@@ -212,7 +213,7 @@ All models are implemented in the notebooks with full explanations. You can find
 
 ### MLX Framework Benefits
 
-- **Native Apple Silicon support** - Runs on M1/M2/M3 NPU
+- **Native Apple Silicon support** - Runs on M1/M2/M3/M4 GPU via Metal
 - **Efficient memory usage** - Optimized for unified memory architecture
 - **Low latency** - On-device inference without cloud dependency
 - **Familiar API** - NumPy-like interface with PyTorch-style modules
@@ -284,10 +285,12 @@ Feel free to extend this project with:
 - **[notebooks/02_Sentiment_Analysis.ipynb](notebooks/02_Sentiment_Analysis.ipynb)** - Word clouds, ROC curves (75 min)
 - **[notebooks/03_Text_Generation.ipynb](notebooks/03_Text_Generation.ipynb)** - Perplexity, temperature comparison (90 min)
 - **[notebooks/04_Complete_Pipeline.ipynb](notebooks/04_Complete_Pipeline.ipynb)** - End-to-end chatbot (120 min)
-- **[notebooks/05_Attention_Mechanism.ipynb](notebooks/05_Attention_Mechanism.ipynb)** - The "brain" of Transformers (45 min)
-- **[notebooks/06_Build_NanoGPT.ipynb](notebooks/06_Build_NanoGPT.ipynb)** - Build a GPT model from scratch (90 min)
-- **[notebooks/07_Fine_Tuning_with_LoRA.ipynb](notebooks/07_Fine_Tuning_with_LoRA.ipynb)** - Fine-tune LLMs on Apple Silicon (60 min)
-- **[notebooks/08_RAG_from_Scratch.ipynb](notebooks/08_RAG_from_Scratch.ipynb)** - Architect-level RAG system design (60 min)
+- **[notebooks/05_Transformer_Classifier.ipynb](notebooks/05_Transformer_Classifier.ipynb)** - Bridge: LSTM to Transformer (45 min)
+- **[notebooks/06_Attention_Mechanism.ipynb](notebooks/06_Attention_Mechanism.ipynb)** - The \"brain\" of Transformers (45 min)
+- **[notebooks/07_Build_NanoGPT.ipynb](notebooks/07_Build_NanoGPT.ipynb)** - Build a GPT model from scratch (90 min)
+- **[notebooks/08_Fine_Tuning_with_LoRA.ipynb](notebooks/08_Fine_Tuning_with_LoRA.ipynb)** - Fine-tune LLMs on Apple Silicon (60 min)
+- **[notebooks/09_RAG_from_Scratch.ipynb](notebooks/09_RAG_from_Scratch.ipynb)** - Architect-level RAG system design (60 min)
+- **[notebooks/10_Embeddings_Deep_Dive.ipynb](notebooks/10_Embeddings_Deep_Dive.ipynb)** - Embedding internals, similarity, t-SNE (60 min)
 
 **📘 See [notebooks/README.md](notebooks/README.md)** for learning paths, installation, and expected results.
 
@@ -306,9 +309,11 @@ Quick reference for specific topics:
 3. Continue with **notebooks/02_Sentiment_Analysis.ipynb** (75 min) - Build on classification
 4. Explore **notebooks/03_Text_Generation.ipynb** (90 min) - Most advanced technique
 5. Finish with **notebooks/04_Complete_Pipeline.ipynb** (120 min) - Full integration
-6. **Advanced:** Dive into **notebooks/05_Attention_Mechanism.ipynb** and **06_Build_NanoGPT.ipynb** to understand Transformers.
-7. **Pro:** Learn to fine-tune LLMs with **notebooks/07_Fine_Tuning_with_LoRA.ipynb**.
-8. **Architect:** Master System Design with **notebooks/08_RAG_from_Scratch.ipynb**.
+6. Bridge: **notebooks/05_Transformer_Classifier.ipynb** (45 min) - Replace LSTM with Transformer
+7. **Advanced:** Dive into **notebooks/06_Attention_Mechanism.ipynb** and **07_Build_NanoGPT.ipynb** to understand Transformers.
+8. **Pro:** Learn to fine-tune LLMs with **notebooks/08_Fine_Tuning_with_LoRA.ipynb**.
+9. **Architect:** Master System Design with **notebooks/09_RAG_from_Scratch.ipynb**.
+10. **Expert:** Deep dive into embeddings with **notebooks/10_Embeddings_Deep_Dive.ipynb**.
 
 **Each notebook is 100% self-contained** - no jumping between files!
 

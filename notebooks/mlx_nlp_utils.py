@@ -10,7 +10,7 @@ import mlx.optimizers as optim
 import numpy as np
 import json
 from pathlib import Path
-from typing import List, Tuple, Dict
+
 
 
 # ============================================================================
@@ -25,9 +25,9 @@ def set_device(device_type='gpu'):
         device_type (str): 'gpu' or 'cpu'. Defaults to 'gpu' if available.
     """
     if device_type == 'gpu':
-        mx.set_default_device(mx.Device(mx.gpu))
+        mx.set_default_device(mx.gpu)
     else:
-        mx.set_default_device(mx.Device(mx.cpu))
+        mx.set_default_device(mx.cpu)
 
 def print_device_info():
     """Print current MLX device information and hardware acceleration status."""
@@ -35,7 +35,7 @@ def print_device_info():
     print(f"\n🖥️  Hardware Acceleration Check:")
     print(f"   Device: {device}")
     
-    if device == mx.Device(mx.gpu):
+    if device.type == mx.gpu:
         print("   ✅ Using Apple Silicon GPU (Metal)")
         print("   ℹ️  MLX automatically optimizes for the GPU's Unified Memory.")
         print("   ℹ️  Note: While Apple Silicon has an NPU (Neural Engine), MLX primarily")
@@ -67,7 +67,7 @@ class IntentLSTM(nn.Module):
         return logits
 
 
-def create_vocabulary(texts: List[str]) -> Tuple[set, dict]:
+def create_vocabulary(texts: list[str]) -> tuple[set, dict]:
     """Create vocabulary from texts"""
     vocab = set()
     for text in texts:
@@ -79,7 +79,7 @@ def create_vocabulary(texts: List[str]) -> Tuple[set, dict]:
     return set(word_to_idx.keys()), word_to_idx
 
 
-def preprocess_text(text: str) -> List[str]:
+def preprocess_text(text: str) -> list[str]:
     """Preprocess text for classification"""
     # Simple punctuation removal
     text = text.lower()
@@ -88,7 +88,7 @@ def preprocess_text(text: str) -> List[str]:
     return text.split()
 
 
-def texts_to_sequences(texts: List[str], word_to_idx: dict) -> List[List[int]]:
+def texts_to_sequences(texts: list[str], word_to_idx: dict) -> list[list[int]]:
     """Convert texts to sequences of indices"""
     sequences = []
     for text in texts:
@@ -98,7 +98,7 @@ def texts_to_sequences(texts: List[str], word_to_idx: dict) -> List[List[int]]:
     return sequences
 
 
-def pad_sequences(sequences: List[List[int]], max_len: int) -> np.ndarray:
+def pad_sequences(sequences: list[list[int]], max_len: int) -> np.ndarray:
     """Pad sequences to same length"""
     padded = np.zeros((len(sequences), max_len), dtype=np.int32)
     for i, seq in enumerate(sequences):
@@ -107,7 +107,7 @@ def pad_sequences(sequences: List[List[int]], max_len: int) -> np.ndarray:
     return padded
 
 
-def train_model(model: nn.Module, X: mx.array, y: mx.array, epochs: int = 50, learning_rate: float = 0.01) -> Tuple[nn.Module, Dict[str, List[float]]]:
+def train_model(model: nn.Module, X: mx.array, y: mx.array, epochs: int = 50, learning_rate: float = 0.01) -> tuple[nn.Module, dict[str, list[float]]]:
     """
     Generic training loop for MLX models.
     
@@ -163,7 +163,7 @@ def train_model(model: nn.Module, X: mx.array, y: mx.array, epochs: int = 50, le
     return model, history
 
 
-def predict_intent(model, text: str, word_to_idx: dict, intent_names: List[str], max_len: int) -> Tuple[str, float]:
+def predict_intent(model, text: str, word_to_idx: dict, intent_names: list[str], max_len: int) -> tuple[str, float]:
     """Predict intent for a single text"""
     tokens = [word_to_idx.get(word.lower(), word_to_idx['<UNK>']) 
               for word in text.split()]
@@ -201,7 +201,7 @@ class SentimentLSTM(nn.Module):
         return logits
 
 
-def predict_sentiment(model, text: str, word_to_idx: dict, sentiment_names: List[str], max_len: int) -> Tuple[str, float]:
+def predict_sentiment(model, text: str, word_to_idx: dict, sentiment_names: list[str], max_len: int) -> tuple[str, float]:
     """Predict sentiment for a single text"""
     tokens = [word_to_idx.get(word.lower(), word_to_idx['<UNK>']) 
               for word in text.split()]
@@ -236,7 +236,7 @@ class TextLSTM(nn.Module):
         return logits
 
 
-def create_char_vocab(text: str) -> Tuple[set, dict, dict]:
+def create_char_vocab(text: str) -> tuple[set, dict, dict]:
     """Create character vocabulary"""
     vocab = sorted(set(text))
     char_to_idx = {char: i for i, char in enumerate(vocab)}
@@ -244,7 +244,7 @@ def create_char_vocab(text: str) -> Tuple[set, dict, dict]:
     return set(vocab), char_to_idx, idx_to_char
 
 
-def text_to_sequences(text: str, char_to_idx: dict, seq_length: int) -> Tuple[np.ndarray, np.ndarray]:
+def text_to_sequences(text: str, char_to_idx: dict, seq_length: int) -> tuple[np.ndarray, np.ndarray]:
     """Convert text to training sequences"""
     X, y = [], []
     for i in range(len(text) - seq_length):
@@ -434,7 +434,7 @@ def load_model(model: nn.Module, path: str):
     print("✅ Model loaded successfully.")
 
 
-def evaluate_model(model: nn.Module, X: mx.array, y: mx.array) -> Tuple[float, List[int], List[int]]:
+def evaluate_model(model: nn.Module, X: mx.array, y: mx.array) -> tuple[float, list[int], list[int]]:
     """
     Evaluate model and return accuracy + predictions for confusion matrix.
     
