@@ -27,18 +27,7 @@ _CHAR_UNK = "<UNK>"
 
 def has_gpu() -> bool:
     """Return True if an Apple Silicon GPU is available via MLX."""
-    try:
-        return bool(mx.metal.is_available())
-    except AttributeError:
-        # Older MLX versions exposed mx.gpu / mx.cpu device handles.
-        try:
-            mx.set_default_device(mx.gpu)
-            mx.eval(mx.array([0]))
-            return True
-        except Exception:
-            return False
-    except Exception:
-        return False
+    return mx.metal.is_available()
 
 
 def set_device(device_type: str = "gpu") -> None:
@@ -49,6 +38,8 @@ def set_device(device_type: str = "gpu") -> None:
         device_type: 'gpu' or 'cpu'. Defaults to 'gpu' if available, else 'cpu'.
     """
     device_type = (device_type or "gpu").lower()
+    if device_type not in {"gpu", "cpu"}:
+        raise ValueError("device_type must be gpu or cpu")
     if device_type == "gpu" and has_gpu():
         mx.set_default_device(mx.gpu)
     else:
@@ -96,9 +87,20 @@ class IntentLSTM(nn.Module):
         # x shape: (batch_size, seq_len)
         embedded = self.embedding(x)
         lstm_out, _ = self.lstm(embedded)
-        last_output = lstm_out[:, -1, :]
+        last_output = last_non_padding(lstm_out, x)
         logits = self.linear(last_output)
         return logits
+
+
+def last_non_padding(hidden: mx.array, tokens: mx.array) -> mx.array:
+    """Select the last real timestep of right-padded token sequences.
+
+    Empty strings have an all-zero representation instead of a PAD embedding.
+    """
+    lengths = mx.sum(tokens != _PAD_IDX, axis=1)
+    indices = mx.maximum(lengths - 1, 0).astype(mx.int32)
+    selected = hidden[mx.arange(tokens.shape[0]), indices]
+    return mx.where(lengths[:, None] > 0, selected, mx.zeros_like(selected))
 
 
 def create_vocabulary(texts: list[str]) -> tuple[dict[str, int], dict[str, int]]:
@@ -143,10 +145,12 @@ def train_val_split(
     """
     if not 0.0 < val_fraction < 1.0:
         raise ValueError(f"val_fraction must be in (0, 1); got {val_fraction}")
+    if len(items) < 2:
+        raise ValueError("At least two items are required for a train/validation split")
     rng = np.random.default_rng(seed)
     indices = np.arange(len(items))
     rng.shuffle(indices)
-    cut = int(round(len(items) * (1.0 - val_fraction)))
+    cut = min(len(items) - 1, max(1, round(len(items) * (1.0 - val_fraction))))
     train_idx = indices[:cut].tolist()
     val_idx = indices[cut:].tolist()
     return [items[i] for i in train_idx], [items[i] for i in val_idx]
@@ -166,6 +170,8 @@ def texts_to_sequences(texts: list[str], word_to_idx: dict) -> list[list[int]]:
 
 def pad_sequences(sequences: list[list[int]], max_len: int) -> np.ndarray:
     """Pad / truncate sequences to ``max_len``, filling with the <PAD> index."""
+    if max_len < 1:
+        raise ValueError("max_len must be positive")
     padded = np.full((len(sequences), max_len), _PAD_IDX, dtype=np.int32)
     for i, seq in enumerate(sequences):
         length = min(len(seq), max_len)
@@ -175,32 +181,43 @@ def pad_sequences(sequences: list[list[int]], max_len: int) -> np.ndarray:
 
 
 def scaled_dot_product_attention(query, key, value, mask=None):
+    """Reference attention returning (output, weights) for notebook heatmaps.
+
+    Inputs have shape (..., sequence, features). As in MLX fast attention,
+    boolean masks use True for *allowed* positions; floating masks are added
+    to scores (zero for visible, -inf for blocked). Use mx.fast SDPA when
+    attention weights are not needed, to avoid materializing the score matrix.
     """
-    Reference implementation of scaled dot-product attention.
-
-    Computes ``softmax(QK^T / sqrt(d_k)) @ V``. The optional ``mask`` is an
-    *additive* mask (0 for unmasked positions, a very large negative for
-    masked positions); ``None`` means "no masking". This is the canonical
-    reference used by notebooks 06 and 06b — both import it from here so
-    each notebook does not have to redefine it.
-
-    Args:
-        query: (..., seq_len_q, d_k)
-        key:   (..., seq_len_k, d_k)
-        value: (..., seq_len_v, d_v)  ``seq_len_v == seq_len_k``
-        mask:  (..., seq_len_q, seq_len_k) additive mask, optional
-
-    Returns:
-        (output, attention_weights)
-    """
-    d_k = query.shape[-1]
-    scores = mx.matmul(query, mx.transpose(key, (0, 2, 1)))
-    scores = scores / np.sqrt(d_k)
+    scores = (query @ mx.swapaxes(key, -1, -2)) * query.shape[-1] ** -0.5
     if mask is not None:
-        scores = scores + (mask * -1e9)
-    attn_weights = mx.softmax(scores, axis=-1)
-    output = mx.matmul(attn_weights, value)
-    return output, attn_weights
+        if mask.dtype == mx.bool_:
+            scores = mx.where(mask, scores, -float("inf"))
+        else:
+            scores = scores + mask
+    attn_weights = mx.softmax(scores, axis=-1, precise=True)
+    return attn_weights @ value, attn_weights
+
+
+def make_train_step(model, optimizer, loss_fn, *, compile_step=True, max_grad_norm=1.0):
+    """Capture model, optimizer AND random state in a compiled update.
+
+    Call with model.train() enabled. Evaluate the returned loss and state after
+    each update to bound the lazy graph. max_grad_norm=None disables clipping.
+    """
+    if max_grad_norm is not None and max_grad_norm <= 0:
+        raise ValueError("max_grad_norm must be positive or None")
+    optimizer.init(model.trainable_parameters())
+    state = [model.state, optimizer.state, mx.random.state]
+    loss_and_grad = nn.value_and_grad(model, loss_fn)
+
+    def step(X, y):
+        loss, grads = loss_and_grad(model, X, y)
+        if max_grad_norm is not None:
+            grads, _ = optim.clip_grad_norm(grads, max_grad_norm)
+        optimizer.update(model, grads)
+        return loss
+
+    return (mx.compile(step, inputs=state, outputs=state) if compile_step else step), state
 
 
 def train_model(
@@ -211,100 +228,80 @@ def train_model(
     learning_rate: float = 0.01,
     X_val: mx.array | None = None,
     y_val: mx.array | None = None,
+    *,
+    batch_size: int = 32,
+    seed: int = 0,
+    compile_step: bool = True,
+    max_grad_norm: float | None = 1.0,
 ) -> tuple[nn.Module, dict[str, list]]:
+    """Mini-batch Adam training with compiled updates and held-out metrics.
+
+    The final partial batch is included. Both training and validation metrics
+    are evaluated with dropout disabled and weighted by target count. For
+    next-character classification, 3-D logits use their final timestep when
+    targets are 1-D; sequence targets retain all timesteps. Supply both
+    validation arrays or neither. Returns (model in eval mode, history).
     """
-    Generic training loop for MLX models.
+    if epochs < 1 or batch_size < 1 or learning_rate <= 0:
+        raise ValueError("epochs, batch_size and learning_rate must be positive")
+    if len(X) == 0 or len(X) != len(y):
+        raise ValueError("Training arrays must be nonempty and have equal lengths")
+    if (X_val is None) != (y_val is None):
+        raise ValueError("Supply both X_val and y_val")
+    has_val = X_val is not None
+    if has_val and (len(X_val) == 0 or len(X_val) != len(y_val)):
+        raise ValueError("Validation arrays must be nonempty and have equal lengths")
 
-    Uses Adam and the lazy-evaluation pattern; ``mx.eval`` is called every step
-    to force the parameter and optimizer-state updates to materialize. The
-    forward pass automatically adapts: ``TextLSTM`` emits
-    ``(batch, seq, vocab)`` and that branch is collapsed to ``(batch, vocab)``
-    on the last timestep when targets are 1-D class indices.
+    def logits_for(X_in, y_in):
+        logits = model(X_in)
+        return logits[:, -1, :] if logits.ndim == 3 and y_in.ndim == 1 else logits
 
-    Args:
-        X, y: training arrays. ``y`` may be class indices (``int32`` of shape
-            ``(N,)``) or, for the text-generation branch, float logits targets
-            (this loop always uses cross-entropy, so pass class indices).
-        X_val, y_val: optional held-out arrays. When both are provided,
-            ``val_loss`` and ``val_accuracy`` are appended to ``history`` each
-            epoch so notebooks can plot a real generalization curve.
+    def loss_fn(model, X_batch, y_batch):
+        return nn.losses.cross_entropy(logits_for(X_batch, y_batch), y_batch, reduction="mean")
 
-    Returns:
-        The trained model and a history dict containing ``loss`` / ``accuracy``
-        lists, plus ``val_loss`` / ``val_accuracy`` when validation data is
-        supplied.
-    """
-    if hasattr(model, "train"):
-        model.train()
-
+    model.train()
     optimizer = optim.Adam(learning_rate=learning_rate)
-
-    def loss_fn(model, X, y):
-        logits = model(X)
-        # ``TextLSTM`` emits (batch, seq, vocab); collapse to last timestep for
-        # classification losses when targets are 1-D class indices.
-        if len(logits.shape) == 3 and len(y.shape) == 1:
-            logits = logits[:, -1, :]
-        return mx.mean(nn.losses.cross_entropy(logits, y))
-
-    loss_and_grad_fn = nn.value_and_grad(model, loss_fn)
-
-    history: dict[str, list] = {"loss": [], "accuracy": []}
-    has_val = X_val is not None and y_val is not None
+    step, state = make_train_step(model, optimizer, loss_fn,
+                                  compile_step=compile_step, max_grad_norm=max_grad_norm)
+    mx.eval(state, X, y)
+    rng = np.random.default_rng(seed)
+    history = {"loss": [], "accuracy": []}
     if has_val:
-        history["val_loss"] = []
-        history["val_accuracy"] = []
-        # Materialise the held-out arrays up front so per-step ``mx.eval`` only
-        # touches the small validation graph.
-        mx.eval(X_val, y_val)
+        history.update(val_loss=[], val_accuracy=[])
 
-    def _forward_metrics(X_in, y_in):
-        out = model(X_in)
-        if len(out.shape) == 3 and len(y_in.shape) == 1:
-            out = out[:, -1, :]
-        preds = mx.argmax(out, axis=-1)
-        acc = mx.mean(preds == y_in)
-        loss = mx.mean(nn.losses.cross_entropy(out, y_in))
-        return float(loss), float(acc)
+    def metrics(X_in, y_in):
+        loss_sum, correct, count = 0.0, 0, 0
+        for start in range(0, len(X_in), batch_size):
+            targets = y_in[start:start + batch_size]
+            logits = logits_for(X_in[start:start + batch_size], targets)
+            loss = nn.losses.cross_entropy(logits, targets, reduction="sum")
+            hits = mx.sum(mx.argmax(logits, axis=-1) == targets)
+            mx.eval(loss, hits)
+            loss_sum += loss.item()
+            correct += hits.item()
+            count += targets.size
+        return loss_sum / count, correct / count
 
     for epoch in range(epochs):
-        loss, grads = loss_and_grad_fn(model, X, y)
-        optimizer.update(model, grads)
-
-        # MLX is lazy: build the graph, but only materialize when needed.
-        # ``mx.eval`` forces the parameter and optimizer-state updates to land
-        # in memory before we read metrics below.
-        mx.eval(model.parameters(), optimizer.state)
-
-        train_loss, train_acc = _forward_metrics(X, y)
+        model.train()
+        indices = mx.array(rng.permutation(len(X)), dtype=mx.int32)
+        for start in range(0, len(X), batch_size):
+            batch = indices[start:start + batch_size]
+            loss = step(X[batch], y[batch])
+            mx.eval(loss, state)
+        model.eval()
+        train_loss, train_acc = metrics(X, y)
         history["loss"].append(train_loss)
         history["accuracy"].append(train_acc)
-
-        val_loss = 0.0
-        val_acc = 0.0
         if has_val:
-            # Evaluate at inference (dropout off, etc.); restore training
-            # mode afterwards so the next optimiser step still updates.
-            if hasattr(model, "eval"):
-                model.eval()
-            val_loss, val_acc = _forward_metrics(X_val, y_val)
+            val_loss, val_acc = metrics(X_val, y_val)
             history["val_loss"].append(val_loss)
             history["val_accuracy"].append(val_acc)
-            if hasattr(model, "train"):
-                model.train()
-
         if (epoch + 1) % 10 == 0:
-            msg = (
-                f"Epoch {epoch + 1:3d}/{epochs} - "
-                f"Loss: {train_loss:.4f} - Accuracy: {train_acc:.4f}"
-            )
+            msg = f"Epoch {epoch + 1:3d}/{epochs} - Loss: {train_loss:.4f} - Accuracy: {train_acc:.4f}"
             if has_val:
                 msg += f" - Val Loss: {val_loss:.4f} - Val Accuracy: {val_acc:.4f}"
             print(msg)
-
-    if hasattr(model, "eval"):
-        model.eval()
-
     return model, history
 
 
@@ -355,7 +352,7 @@ class SentimentLSTM(nn.Module):
     def __call__(self, x: mx.array) -> mx.array:
         embedded = self.embedding(x)
         lstm_out, _ = self.lstm(embedded)
-        last_output = lstm_out[:, -1, :]
+        last_output = last_non_padding(lstm_out, x)
         last_output = self.dropout(last_output)
         logits = self.linear(last_output)
         return logits
@@ -428,6 +425,8 @@ def text_to_sequences(
     seq_length: int,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Convert text to ``(X, y)`` training pairs of length ``seq_length``."""
+    if seq_length < 1 or len(text) <= seq_length:
+        raise ValueError("text must be longer than a positive seq_length")
     X: list[list[int]] = []
     y: list[int] = []
     for i in range(len(text) - seq_length):
@@ -467,6 +466,9 @@ def generate_text(
     if window < 1:
         raise ValueError(f"window must be >= 1, got {window}")
 
+    if temperature < 0 or length < 0:
+        raise ValueError("temperature and length must be nonnegative")
+
     generated = seed
     current_seq = [char_to_idx.get(c, _UNK_IDX) for c in seed[-window:]]
     current_seq = ([_PAD_IDX] * (window - len(current_seq))) + current_seq
@@ -475,17 +477,13 @@ def generate_text(
         X = mx.array([current_seq])
         logits = model(X)
 
-        # Last timestep, with optional temperature scaling.
-        logits = logits[0, -1, :] / max(temperature, 1e-8)
-        probs = mx.softmax(logits)
-
-        next_idx = int(mx.random.categorical(mx.log(probs), num_samples=1)[0])
-        next_char = idx_to_char.get(next_idx, _CHAR_UNK)
-
-        generated += next_char
+        # Sample logits directly; special vocabulary entries are never text.
+        logits = logits[0, -1, :]
+        logits = mx.where(mx.arange(logits.size) < 2, -float("inf"), logits)
+        next_token = mx.argmax(logits) if temperature == 0 else mx.random.categorical(logits / temperature)
+        next_idx = next_token.item()  # Materializes this step before extending context.
+        generated += idx_to_char[next_idx]
         current_seq = current_seq[1:] + [next_idx]
-        # Materialize the per-step computation graph; cheap for one step.
-        mx.eval(current_seq)
 
     return generated
 
@@ -617,6 +615,7 @@ def load_rag_knowledge_base() -> list[str]:
 def save_model(model: nn.Module, path: str) -> None:
     """Save model weights to ``path`` (``model.save_weights`` handles the format)."""
     path = str(path)
+    Path(path).parent.mkdir(parents=True, exist_ok=True)
     print(f"Saving model weights to {path}...")
     model.save_weights(path)
     print("✅ Model saved successfully.")

@@ -162,7 +162,8 @@ def generate_text_corpus(output_dir: str = "data") -> Path:
     Unified memory: A notable difference from other frameworks and MLX is the unified memory model. Arrays in MLX live in shared memory. Operations on MLX arrays can be performed on any of the supported device types without moving data.
     """
 
-    corpus = base_text * 5
+    # Do not replicate the corpus across the chronological validation split.
+    corpus = base_text.strip() + "\n"
     output_path = Path(output_dir) / "text_gen_samples" / "corpus.txt"
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with open(output_path, "w", encoding="utf-8") as f:
@@ -245,25 +246,6 @@ INTENT_TEMPLATES: dict[str, list[str]] = {
     ],
 }
 
-ASSISTANT_RESPONSES: dict[str, list[str]] = {
-    "greeting": [
-        "Hi! How can I help you today?",
-        "Hello! What can I do for you?",
-        "Hey there! Ready when you are.",
-    ],
-    "question": [
-        "Let me look that up for you.",
-        "Great question — one moment.",
-        "I'll find that information right away.",
-    ],
-    "command": [
-        "Done! Let me know if you need anything else.",
-        "Got it. Anything else?",
-        "Completed. What's next?",
-    ],
-}
-
-
 def generate_lora_chat_data(
     n_train: int = 800,
     n_val: int = 200,
@@ -286,10 +268,21 @@ def generate_lora_chat_data(
     train_records: list[dict] = []
     val_records: list[dict] = []
 
+    if n_train < 1 or n_val < 1:
+        raise ValueError("LoRA split sizes must be positive")
+    # Split source prompts BEFORE sampling repetitions. No validation prompt
+    # can occur in training, even with hundreds of examples from this tiny pool.
+    train_templates, val_templates = {}, {}
+    for intent, templates in INTENT_TEMPLATES.items():
+        templates = list(templates)
+        rng.shuffle(templates)
+        cut = max(1, len(templates) // 5)
+        val_templates[intent] = templates[:cut]
+        train_templates[intent] = templates[cut:]
     for _ in range(n_train):
-        train_records.append(_sample_chat(rng))
+        train_records.append(_sample_chat(rng, train_templates))
     for _ in range(n_val):
-        val_records.append(_sample_chat(rng))
+        val_records.append(_sample_chat(rng, val_templates))
 
     train_path = Path(output_dir) / "train.jsonl"
     val_path = Path(output_dir) / "valid.jsonl"
@@ -306,18 +299,18 @@ def generate_lora_chat_data(
     return train_path, val_path
 
 
-def _sample_chat(rng: random.Random) -> dict:
+def _sample_chat(rng: random.Random, templates: dict[str, list[str]]) -> dict:
     """Produce a single chat-format example with a system + user + assistant turn."""
-    intent = rng.choice(list(INTENT_TEMPLATES.keys()))
-    user_msg = rng.choice(INTENT_TEMPLATES[intent])
-    assistant_msg = rng.choice(ASSISTANT_RESPONSES[intent])
+    intent = rng.choice(list(templates))
+    user_msg = rng.choice(templates[intent])
+    assistant_msg = intent
     return {
         "messages": [
             {
                 "role": "system",
                 "content": (
-                    "You are a concise command-line assistant. Identify the user's "
-                    "intent (greeting, question, or command) and respond briefly."
+                    "Classify the user message. Reply with exactly one label: "
+                    "greeting, question, or command."
                 ),
             },
             {"role": "user", "content": user_msg},

@@ -1,3 +1,8 @@
+> Updated October 2026. Use Python 3.12+, Apple Silicon macOS 14+, and the
+> pinned environment from `make setup`. Run `make check` and `make smoke` from
+> the repository root. Notebook 08 downloads and fine-tunes a pretrained model;
+> notebook 10 downloads PyTorch embedding models. Both require separate manual runs.
+
 # MLX NLP Jupyter Notebooks
 
 Interactive tutorials for learning NLP with MLX on Apple Silicon.
@@ -23,12 +28,12 @@ Learn to classify user commands into intents
   - Confusion matrix heatmap
 
 ### 2. Sentiment Analysis (`02_Sentiment_Analysis.ipynb`)
-Detect emotions in text (positive/negative)
+Classify text as negative, neutral, or positive
 - **Time**: 60-75 minutes
 - **Level**: Intermediate
 - **Visualizations**:
   - Sentiment distribution
-  - Word clouds (positive/negative)
+  - Word clouds for all three sentiment classes
   - Training progress
   - ROC curve & AUC
   - Prediction probabilities
@@ -52,7 +57,7 @@ End-to-end chatbot combining all techniques
 - **Content**:
   - Data preprocessing pipeline
   - Multi-model training
-  - Ensemble predictions
+  - Intent routing, sentiment adjustment, and generation fallback
   - Deployment workflow
 
 ### 5. Transformer Classifier (`05_Transformer_Classifier.ipynb`)
@@ -63,7 +68,7 @@ Bridge from LSTMs to Transformers — build a Transformer-based classifier
   - Positional encoding from scratch
   - Multi-Head Self-Attention in MLX
   - LSTM vs Transformer comparison
-  - Attention weight visualization
+  - Padding masks, fixed positions, and training-curve comparison
 
 ### 6. Attention Mechanism (`06_Attention_Mechanism.ipynb`)
 Understand the math behind Transformers
@@ -88,8 +93,8 @@ Build a GPT model from scratch and train it on a small character-level corpus
 - **Time**: 90-120 minutes
 - **Level**: Expert
 - **Content**:
-  - Multi-Head Attention
-  - Transformer Blocks
+  - Fused causal multi-head attention
+  - Transformer blocks and compiled updates with random state
   - Training on a 4-line Hamlet excerpt (the demo corpus; swap in your own data when you scale up)
 
 ### 8. Fine-Tuning with LoRA (`08_Fine_Tuning_with_LoRA.ipynb`)
@@ -99,7 +104,8 @@ Fine-tune Llama-3.2 on your own data
 - **Content**:
   - LoRA (Low-Rank Adaptation)
   - 4-bit Quantization
-  - Custom Dataset Preparation
+  - Label-only chat targets and disjoint validation prompts
+  - Gradient checkpointing and prompt-loss masking
 
 ### 9. RAG from Scratch (`09_RAG_from_Scratch.ipynb`)
 Walk through a Retrieval Augmented Generation system end-to-end (toy BoW embeddings; swap in real embeddings per Notebook 10)
@@ -117,12 +123,12 @@ Advanced optimization for RAG systems
 - **Content**:
   - Visualizing Embedding Space (t-SNE)
   - Benchmarking Models (Speed vs Quality)
-  - Domain-Specific Fine-Tuning
-  - Trace Retrieval Optimization
+  - Domain-specific retrieval evaluation (no embedding fine-tuning)
+  - Query/document encoding and top-1 retrieval accuracy
 
 ## 🚀 Quick Start
 
-The repository now ships with a `Makefile` at the project root that handles venv setup and data generation. Run `make setup` once, then `cd notebooks && jupyter notebook` (or `make run` from the project root).
+The repository now ships with a `Makefile` at the project root that handles venv setup and data generation. Run `make setup` once, then `make run` from the project root. This uses Jupyter from `.venv` without requiring shell activation.
 
 If you prefer to drive the steps by hand:
 
@@ -156,16 +162,16 @@ cd notebooks && jupyter notebook              # launch Jupyter
 - Deploying models for production use
 
 ### Datasets
-- **Sample Data**: Quick testing (< 1 second)
+- **Sample Data**: Small educational datasets
   - 160 intent examples
   - 150 sentiment reviews
   - Small text corpus
   - 800 chat-format messages for LoRA demo
-- **Real Datasets**: Production training (10-30 seconds)
-  - SNIPS: 16K+ voice queries
+- **Real Datasets**: Optional downloads; training time depends on model and hardware
+  - SNIPS: 13,784 training / 700 validation queries, 7 intents
   - IMDB: 50K movie reviews
-  - WikiText: 100M+ tokens
-  - Shakespeare: For training NanoGPT
+  - WikiText-2: ~2M training tokens
+  - NanoGPT: A short hardcoded Shakespeare excerpt
 
 ## 🎯 Learning Paths
 
@@ -195,21 +201,28 @@ cd notebooks && jupyter notebook              # launch Jupyter
 5. RAG from Scratch (Notebook 09)
 6. Embeddings Deep Dive (Notebook 10)
 
-## 📈 Expected Results
+## Validation and interpreting results
 
-### Sample Data Performance
-| Model | Training Time | Accuracy | Notes |
-|-------|--------------|----------|-------|
-| Intent | < 1 min | ~80% | Limited by small dataset |
-| Sentiment | < 1 min | ~90% | May overfit |
-| Generation | < 2 min | Basic | Simple patterns |
+The October 2026 refresh was checked on Apple Silicon with Python 3.13:
+18 regression tests passed, all 12 notebooks passed structure/syntax checks,
+and the 10 offline notebooks executed in fresh kernels with reduced training.
+SNIPS and Banking77 downloads were also exercised. These are execution checks,
+not accuracy, convergence, or performance benchmarks.
 
-### Real Data Performance
-| Model | Dataset | Typical Training Time | Typical Val Accuracy | Notes |
-|-------|---------|------------------------|----------------------|-------|
-| Intent | SNIPS | 2-5 min | ~85-95% | Real intents vary widely by source; numbers depend on which SNIPS split you load |
-| Sentiment | IMDB | 5-10 min | ~80-92% | See `PRODUCTION_README.md` for the full ranges |
-| Generation | WikiText-2 | 10-20 min | Val PPL ~20-50 | Multi-sentence; PPL depends on temperature and dataset slice |
+```bash
+# From the repository root:
+make check
+make smoke
+# Execute a single offline lesson with reduced training:
+.venv/bin/python scripts/check_notebooks.py --execute --quick --notebook 05
+```
+
+Notebooks 08 and 10 are validated statically but excluded from the execution
+runner because they download pretrained models. Their full LoRA training and
+embedding benchmarks have not been validated in this refresh. Run them manually
+before relying on their results. Published performance claims need a recorded
+hardware configuration, dataset/split, training budget, and measured results.
+The toy validation sets are too small to establish deployment quality.
 
 ## 🔧 Tips for Success
 
@@ -246,13 +259,13 @@ cd notebooks && jupyter notebook              # launch Jupyter
 ## 📚 Additional Resources
 
 ### Documentation
-- **Source code**: `notebooks/mlx_nlp_utils.py` (~660 lines of shared utilities)
-- `../PRODUCTION_README.md` - Local-serving options and training accuracy ranges
+- **Source code**: `notebooks/mlx_nlp_utils.py` (shared utilities)
+- `../PRODUCTION_README.md` - Real-data adaptation, measurement, and local-serving scope
 - `../README.md` - Project overview
 
 ### Code Examples
 - `mlx_nlp_utils.py` - Consolidated model implementations
-- `04_Complete_Pipeline.ipynb` - Full production pipeline
+- `04_Complete_Pipeline.ipynb` - Complete toy pipeline
 - `01_Intent_Classification.ipynb` - Training examples
 
 ### Datasets
@@ -263,40 +276,52 @@ cd notebooks && jupyter notebook              # launch Jupyter
 
 ## 🐛 Troubleshooting
 
-### Jupyter won't start
+### Jupyter or imports fail
+
+Use the project environment instead of upgrading individual packages outside
+its pins. From the repository root:
+
 ```bash
-pip install --upgrade jupyter
-jupyter notebook --no-browser
+make install
+.venv/bin/python -m pip check
+make run
 ```
+
+If you manually changed packages after setup, `make install` may find its stamp
+up to date. Restore the pinned versions explicitly, then restart the kernel:
+
+```bash
+.venv/bin/python -m pip install -r requirements.txt
+```
+
+Run notebooks from the `notebooks/` folder, as configured by `make run`, so the
+shared helper and `../data` paths resolve. In a notebook, `import sys;
+print(sys.executable)` should point to this repository's `.venv`.
 
 ### Plots don't show
-```bash
-pip install matplotlib seaborn
-# Add to first cell: %matplotlib inline
-```
 
-### Can't find modules
-```python
-import sys
-sys.path.append('..')
-```
+Restart the project kernel and rerun the imports. For static Matplotlib plots,
+add `%matplotlib inline` in an interactive notebook. Plotly and widget displays
+need a working Jupyter frontend; the smoke runner uses noninteractive renderers.
 
-### MLX errors
-```bash
-# Reinstall MLX
-pip install --upgrade mlx
-```
+### Out of memory or unexpected training behavior
 
-### Out of memory
-```python
-# Reduce batch size or use subset of data
-X_subset = X[:100]
-y_subset = y[:100]
-```
+Reduce the `batch_size` argument to `train_model`; for notebook 08 reduce the
+LoRA `--batch-size` and `--max-seq-length` settings. The LoRA lesson already uses
+gradient checkpointing. Pass `compile_step=False` to the shared trainer when
+debugging and rerun from a fresh model. Keep both validation arrays together.
+
+### Existing checkpoints after this update
+
+Retrain the small teaching models when comparing results with the refreshed
+notebooks: vocabulary splits and padding behavior changed. Older notebook 05
+checkpoints may include a positional-encoding parameter that is now fixed and
+excluded from trainable weights. Earlier LoRA data trained conversational
+responses; regenerate samples and retrain adapters for the label-only task.
 
 ## 🎓 Interactive Features
 
-Each notebook includes:
+Across the series, the notebooks provide:
 - ✅ Step-by-step explanations
 - ✅ Runnable code cells
 - ✅ Visual outputs
@@ -313,15 +338,15 @@ By completing these notebooks, you will:
 - Train on real-world datasets
 - Visualize model performance
 - Debug and improve accuracy
-- Deploy production models
+- Identify the extra evaluation and serving work needed for deployment
 - Build complete chatbots
 
 ## 🌟 What Makes These Special
 
 1. **Apple Silicon Optimized** - Uses MLX for M1/M2/M3
-2. **Real Datasets** - Not just toy examples
+2. **Optional real datasets** - Downloads and adaptation guidance alongside toy examples
 3. **Rich Visualizations** - 20+ different plots
-4. **Production Focus** - Deploy-ready code
+4. **Deployment discussion** - Educational patterns requiring application-specific validation
 5. **Interactive** - Modify and experiment
 6. **Comprehensive** - Covering theory, code, visualisations, and exercises in one place
 

@@ -1,79 +1,71 @@
-# MLX NLP Tutorial — single-command setup.
-#
-# Typical first run:
-#   make setup      # create a venv, install deps, generate sample data
-#   make run        # launch Jupyter inside the venv
-#
-# Common subsets:
-#   make setup-samples      # just the toy data
-#   make setup-real         # SNIPS + IMDB + Banking77 + WikiText
-#   make download              # alias for setup-real
-#
-# Maintenance:
-#   make clean-data    # drop downloaded datasets (samples preserved)
-#   make clean-caches  # drop __pycache__ directories
-#   make venv          # create the .venv without installing anything
-
-PY     ?= python3
-VENV   ?= .venv
-PIP    := $(VENV)/bin/pip
-PYBIN  := $(VENV)/bin/python
+# Python 3.12+ on Apple Silicon. Override PY or VENV if needed.
+PY ?= python3
+VENV ?= .venv
+PYBIN := $(VENV)/bin/python
 JUPYTER := $(VENV)/bin/jupyter
+DATA_DIR ?= data
 
-DATA_DIR := data
-
-# ---------------------------------------------------------------------------
-# Top-level targets
-# ---------------------------------------------------------------------------
-
-.PHONY: help setup run install samples setup-samples setup-real download \
-        clean-data clean-caches venv clean
+.PHONY: help venv install setup samples setup-samples setup-real download run \
+        dev check test smoke clean-data clean-caches clean
 
 help:
-	@echo "Targets:"
-	@echo "  make setup        Bootstraps .venv, installs deps, generates sample data"
-	@echo "  make run          Launches Jupyter in the notebooks/ folder"
-	@echo "  make setup-real   Downloads SNIPS, IMDB, Banking77, and WikiText"
-	@echo "  make clean-data   Removes downloaded real datasets (keeps samples)"
-	@echo "  make clean-caches Removes __pycache__ directories"
-	@echo "  make clean        Removes .venv and all generated artefacts"
+	@echo "make setup          Install pinned dependencies and generate sample data"
+	@echo "make run            Launch Jupyter (no reinstall when dependencies are unchanged)"
+	@echo "make setup-samples  Generate offline sample data only"
+	@echo "make setup-real     Download SNIPS, IMDB, Banking77, and WikiText"
+	@echo "make check          Run lint, notebook validation, and regression tests"
+	@echo "make smoke          Execute offline notebooks with reduced training"
 
-venv:
+$(PYBIN):
+	$(PY) -c 'import sys; assert sys.version_info >= (3, 12), "Python 3.12+ required"'
 	$(PY) -m venv $(VENV)
-	$(PIP) install --upgrade pip
 
-install: venv
-	$(PIP) install -r requirements.txt
+venv: $(PYBIN)
 
-samples: install
-	$(PYBIN) scripts/download_datasets.py --samples
+$(VENV)/.deps.stamp: requirements.txt $(PYBIN)
+	$(PYBIN) -c 'import sys; assert sys.version_info >= (3, 12), "Python 3.12+ required"'
+	$(PYBIN) -m ensurepip --upgrade
+	$(PYBIN) -m pip install -r requirements.txt
+	@touch $@
+
+install: $(VENV)/.deps.stamp
+
+samples setup-samples: venv
+	$(PYBIN) scripts/download_datasets.py --samples --data-dir "$(DATA_DIR)"
 
 setup: install samples
-	@echo
-	@echo "Setup complete. Run 'make run' to launch Jupyter."
-	@echo "Start with notebooks/00_Overview.ipynb."
+	@echo "Setup complete. Run 'make run', then open 00_Overview.ipynb."
 
 run: install
-	cd notebooks && $(JUPYTER) notebook
+	$(JUPYTER) notebook --notebook-dir=notebooks
 
 setup-real: install
-	$(PYBIN) scripts/download_datasets.py --all
-	@echo "Real datasets downloaded under $(DATA_DIR)/"
+	$(PYBIN) scripts/download_datasets.py --all --data-dir "$(DATA_DIR)"
 
 download: setup-real
 
-# ---------------------------------------------------------------------------
-# Cleanup
-# ---------------------------------------------------------------------------
+$(VENV)/.dev.stamp: requirements-dev.txt $(VENV)/.deps.stamp
+	$(PYBIN) -m pip install -r requirements-dev.txt
+	@touch $@
+
+dev: $(VENV)/.dev.stamp
+
+check: dev
+	$(VENV)/bin/ruff check notebooks scripts tests --select F821,E9
+	$(PYBIN) scripts/check_notebooks.py
+	$(PYBIN) -m pytest -q
+
+test: dev
+	$(PYBIN) -m pytest -q
+
+smoke: dev
+	$(PYBIN) scripts/check_notebooks.py --execute --quick
 
 clean-data:
 	rm -rf $(DATA_DIR)/imdb $(DATA_DIR)/snips $(DATA_DIR)/banking77 $(DATA_DIR)/wikitext
-	@echo "Real datasets removed (sample data and LoRA chat files preserved)."
 
 clean-caches:
-	find . -type d -name __pycache__ -exec rm -rf {} +
-	@echo "All __pycache__ directories removed."
+	find notebooks scripts tests -type d -name __pycache__ -exec rm -rf {} +
 
 clean: clean-data clean-caches
 	rm -rf $(VENV)
-	@echo "Removed .venv and generated artefacts."

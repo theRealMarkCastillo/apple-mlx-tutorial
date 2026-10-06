@@ -17,26 +17,33 @@ that there is exactly one canonical source of synthetic data in this repo.
 import argparse
 import json
 import sys
-import traceback
+import random
 from pathlib import Path
 
 # Add repo root to sys.path so we can import the synthetic-data generator.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-try:
-    from datasets import load_dataset
-except ImportError:
-    print("ERROR: 'datasets' library not installed.")
-    print("Please run: pip install datasets")
-    sys.exit(1)
+def load_dataset(*args, **kwargs):
+    """Import the optional network loader only for real dataset downloads."""
+    from datasets import load_dataset as hf_load_dataset
+    return hf_load_dataset(*args, **kwargs)
 
 
-# Known HuggingFace mirrors/configs for SNIPS. ``bbalogh/snips_built_in_intents``
-# is a stable public mirror of the original SNIPS voice-assistant corpus.
-_SNIPS_CANDIDATES = [
-    "bbalogh/snips_built_in_intents",
-    "snips_built_in_intents",
-]
+def stratified_holdout(texts, labels, seed=0):
+    """Hold out examples within each label, never whole class-sorted tails."""
+    rng = random.Random(seed)
+    groups = {}
+    for text, label in dict.fromkeys(zip(texts, labels)):
+        groups.setdefault(label, []).append(text)
+    train_texts, train_labels, test_texts, test_labels = [], [], [], []
+    for label, examples in groups.items():
+        rng.shuffle(examples)
+        n_test = min(len(examples) - 1, max(1, round(len(examples) * 0.2)))
+        test_texts.extend(examples[:n_test])
+        test_labels.extend([label] * n_test)
+        train_texts.extend(examples[n_test:])
+        train_labels.extend([label] * (len(examples) - n_test))
+    return train_texts, train_labels, test_texts, test_labels
 
 
 class DatasetDownloader:
@@ -44,7 +51,7 @@ class DatasetDownloader:
 
     def __init__(self, data_dir: str = "data"):
         self.data_dir = Path(data_dir)
-        self.data_dir.mkdir(exist_ok=True)
+        self.data_dir.mkdir(parents=True, exist_ok=True)
 
     # ------------------------------------------------------------------
     # Real datasets
@@ -56,14 +63,14 @@ class DatasetDownloader:
         print("DOWNLOADING IMDB DATASET")
         print("=" * 60)
 
-        dataset = load_dataset("imdb")
+        dataset = load_dataset("stanfordnlp/imdb")
         output_dir = self.data_dir / "imdb"
         output_dir.mkdir(exist_ok=True)
 
         def _split(name: str) -> tuple[list[str], list[int]]:
             texts = []
             labels = []
-            for i, ex in enumerate(dataset[name]):
+            for i, ex in enumerate(dataset[name].shuffle(seed=0)):
                 if i >= max_samples:
                     break
                 texts.append(ex["text"])
@@ -84,41 +91,35 @@ class DatasetDownloader:
         return output_dir
 
     def download_snips(self) -> Path | None:
-        """Download SNIPS intents from a known HuggingFace mirror."""
+        """Download the original seven-intent SNIPS train/validation benchmark."""
         print("\n" + "=" * 60)
         print("DOWNLOADING SNIPS DATASET")
         print("=" * 60)
 
-        dataset = None
-        for name in _SNIPS_CANDIDATES:
-            try:
-                dataset = load_dataset(name)
-                print(f"  Loaded from mirror: {name}")
-                break
-            except Exception as exc:  # noqa: BLE001 — surface every mirror failure
-                print(f"  Mirror '{name}' failed: {exc}")
-
-        if dataset is None:
-            print("All SNIPS mirrors failed; falling back to the curated offline dataset.")
-            return self._create_snips_fallback()
-
+        # The original SNIPS benchmark is JSON, so no removed HF dataset
+        # script API or unverified mirror is needed.
+        from urllib.request import urlopen
+        intents = ["AddToPlaylist", "BookRestaurant", "GetWeather", "PlayMusic",
+                   "RateBook", "SearchCreativeWork", "SearchScreeningEvent"]
+        base = "https://raw.githubusercontent.com/snipsco/nlu-benchmark/master/2017-06-custom-intent-engines"
+        train_texts, train_labels, test_texts, test_labels = [], [], [], []
+        for intent in intents:
+            for split, texts, labels in [("train", train_texts, train_labels),
+                                         ("validate", test_texts, test_labels)]:
+                filename = f"train_{intent}_full.json" if split == "train" else f"validate_{intent}.json"
+                with urlopen(f"{base}/{intent}/{filename}", timeout=60) as response:
+                    raw = response.read()
+                # The original benchmark includes both UTF-8 and Latin-1 files.
+                try:
+                    document = raw.decode("utf-8-sig")
+                except UnicodeDecodeError:
+                    document = raw.decode("latin-1")
+                records = json.loads(document)[intent]
+                for record in records:
+                    texts.append("".join(piece["text"] for piece in record["data"]))
+                    labels.append(intent)
         output_dir = self.data_dir / "snips"
         output_dir.mkdir(exist_ok=True)
-
-        # Some mirrors ship a single 'train' split; handle either case.
-        train_texts = [ex["text"] for ex in dataset["train"]]
-        train_labels = [ex["label"] for ex in dataset["train"]]
-
-        if "test" in dataset:
-            test_texts = [ex["text"] for ex in dataset["test"]]
-            test_labels = [ex["label"] for ex in dataset["test"]]
-        else:
-            # Hold out the last 20% as a real test set with no overlap.
-            split_idx = int(len(train_texts) * 0.8)
-            test_texts = train_texts[split_idx:]
-            test_labels = train_labels[split_idx:]
-            train_texts = train_texts[:split_idx]
-            train_labels = train_labels[:split_idx]
 
         with open(output_dir / "train.json", "w", encoding="utf-8") as f:
             json.dump({"texts": train_texts, "labels": train_labels}, f)
@@ -131,13 +132,12 @@ class DatasetDownloader:
         return output_dir
 
     def _create_snips_fallback(self) -> Path | None:
-        """Offline SNIPS-like fallback used when every HF mirror fails."""
+        """Explicit tiny offline fixture; never silently replaces real downloads."""
         output_dir = self.data_dir / "snips"
         output_dir.mkdir(exist_ok=True)
 
-        # 6 intents (matches the canonical SNIPS NLU subset commonly used in
-        # tutorials — PlayMusic, GetWeather, BookRestaurant, SearchCreativeWork,
-        # AddToPlaylist, RateBook).
+        # Six toy intent groups for offline exercises, not the seven-class
+        # original SNIPS benchmark.
         intents_data = {
             "PlayMusic": [
                 "play some music",
@@ -189,14 +189,9 @@ class DatasetDownloader:
             train_texts.extend(texts)
             train_labels.extend([label] * len(texts))
 
-        # Use the LAST 20% of training rows as the held-out test set, and
-        # remove them from training. This avoids the train/test overlap that
-        # the previous modulo-based sampling produced.
-        split_idx = int(len(train_texts) * 0.8)
-        test_texts = train_texts[split_idx:]
-        test_labels = train_labels[split_idx:]
-        train_texts = train_texts[:split_idx]
-        train_labels = train_labels[:split_idx]
+        train_texts, train_labels, test_texts, test_labels = stratified_holdout(
+            train_texts, train_labels,
+        )
 
         with open(output_dir / "train.json", "w", encoding="utf-8") as f:
             json.dump({"texts": train_texts, "labels": train_labels}, f)
@@ -214,20 +209,20 @@ class DatasetDownloader:
         print("DOWNLOADING BANKING77 DATASET")
         print("=" * 60)
 
-        try:
-            dataset = load_dataset("banking77")
-        except Exception as exc:
-            print(f"ERROR: Could not download Banking77 dataset: {exc}")
-            traceback.print_exc()
-            return None
+        # Load the publisher's CSV files with the generic builder. HF's old
+        # banking77.py loader is incompatible with datasets 4+.
+        base = "https://raw.githubusercontent.com/PolyAI-LDN/task-specific-datasets/master/banking_data"
+        dataset = load_dataset("csv", data_files={
+            "train": f"{base}/train.csv", "test": f"{base}/test.csv",
+        })
 
         output_dir = self.data_dir / "banking77"
         output_dir.mkdir(exist_ok=True)
 
         train_texts = [ex["text"] for ex in dataset["train"]]
-        train_labels = [ex["label"] for ex in dataset["train"]]
+        train_labels = [ex["category"] for ex in dataset["train"]]
         test_texts = [ex["text"] for ex in dataset["test"]]
-        test_labels = [ex["label"] for ex in dataset["test"]]
+        test_labels = [ex["category"] for ex in dataset["test"]]
 
         with open(output_dir / "train.json", "w", encoding="utf-8") as f:
             json.dump({"texts": train_texts, "labels": train_labels}, f)
@@ -245,12 +240,7 @@ class DatasetDownloader:
         print(f"DOWNLOADING WIKITEXT DATASET ({version})")
         print("=" * 60)
 
-        try:
-            dataset = load_dataset("wikitext", version)
-        except Exception as exc:
-            print(f"ERROR: Could not download WikiText {version}: {exc}")
-            traceback.print_exc()
-            return None
+        dataset = load_dataset("Salesforce/wikitext", version)
 
         output_dir = self.data_dir / "wikitext"
         output_dir.mkdir(exist_ok=True)
@@ -288,11 +278,11 @@ class DatasetDownloader:
         print("CREATING SAMPLE DATASETS")
         print("=" * 60)
 
-        generate_synthetic_data.generate_intent_data()
-        generate_synthetic_data.generate_sentiment_data()
-        generate_synthetic_data.generate_text_corpus()
-        generate_synthetic_data.generate_rag_knowledge_base()
-        generate_synthetic_data.generate_lora_chat_data()
+        generate_synthetic_data.generate_intent_data(output_dir=str(self.data_dir))
+        generate_synthetic_data.generate_sentiment_data(output_dir=str(self.data_dir))
+        generate_synthetic_data.generate_text_corpus(output_dir=str(self.data_dir))
+        generate_synthetic_data.generate_rag_knowledge_base(output_dir=str(self.data_dir))
+        generate_synthetic_data.generate_lora_chat_data(output_dir=str(self.data_dir))
 
 
 def main() -> None:
@@ -318,6 +308,8 @@ def main() -> None:
         parser.print_help()
         sys.exit(0)
 
+    if args.max_samples < 1:
+        parser.error("--max-samples must be positive")
     downloader = DatasetDownloader(args.data_dir)
 
     print("=" * 60)
