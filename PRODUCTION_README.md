@@ -2,9 +2,10 @@
 
 These notebooks teach MLX training and inference. They are not a production
 service or a verified benchmark suite. Notebook 04 combines three models trained
-on synthetic samples; notebook 09 demonstrates lexical retrieval and prompt
-construction without running an LLM. Example outputs and old timing estimates
-should not be treated as measured performance.
+on synthetic samples; notebook 09 evaluates word-overlap retrieval on 40
+labeled queries (and optionally generates answers with an LLM). The sample data
+is tiny and partly templated, so the numbers the notebooks print are for
+learning evaluation technique, not performance claims. Timings depend on your hardware.
 
 ## Environment and checks
 
@@ -130,7 +131,12 @@ are not themselves Core ML packages. Deployment conversion is outside this repo.
 
 `make check` validates every notebook, checks undefined names/syntax, and runs
 regressions for masking, padding, compiled random state, partial batches,
-checkpoint round-trips, generation, and dataset handling. `make smoke` executes
-notebooks 00–07 (including 06b) and 09 with reduced training in a temporary copy.
-Notebooks 08 and 10 need pretrained model downloads and manual execution; they
-are excluded from the offline smoke suite.
+checkpoint round-trips, generation, dataset handling, and the evaluation
+helpers (tokenizer, grouped splits, near-duplicate detection, bootstrap
+intervals). `make smoke` executes the offline notebooks (00–07, 06b, 09, and
+00b) with 1-epoch training in a temporary copy, to catch crashes quickly.
+`make validate` runs the same notebooks at full training budgets and also
+enforces each notebook's `sanity_check` claims (for example, that a model beats
+the majority baseline), so a lesson whose narrative stops matching its results
+fails the build. Notebooks 08 and 10 need pretrained model downloads and
+manual execution (`--include-manual`); they are excluded from the offline suites.
