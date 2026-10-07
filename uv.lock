@@ -103,16 +103,12 @@ dependencies = [
     { name = "jupyter", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
     { name = "matplotlib", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
     { name = "mlx", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-    { name = "mlx-lm", extra = ["train"], marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
     { name = "notebook", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
     { name = "numpy", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
     { name = "plotly", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-    { name = "protobuf", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
     { name = "scikit-learn", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
     { name = "seaborn", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-    { name = "sentence-transformers", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-    { name = "sentencepiece", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-    { name = "transformers", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
+    { name = "tokenizers", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
     { name = "wordcloud", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
 ]
 
@@ -123,6 +119,16 @@ dev = [
     { name = "pytest", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
     { name = "ruff", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
 ]
+embeddings = [
+    { name = "sentence-transformers", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
+    { name = "transformers", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
+]
+llm = [
+    { name = "mlx-lm", extra = ["train"], marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
+    { name = "protobuf", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
+    { name = "sentencepiece", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
+    { name = "transformers", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
+]
 
 [package.metadata]
 requires-dist = [
@@ -131,16 +137,12 @@ requires-dist = [
     { name = "jupyter", specifier = "==1.1.1" },
     { name = "matplotlib", specifier = "==3.11.2" },
     { name = "mlx", specifier = "==0.32.3" },
-    { name = "mlx-lm", extras = ["train"], specifier = "==0.32.0" },
     { name = "notebook", specifier = "==7.6.3" },
     { name = "numpy", specifier = "==2.5.3" },
     { name = "plotly", specifier = "==7.1.0" },
-    { name = "protobuf", specifier = "==7.36.2" },
     { name = "scikit-learn", specifier = "==1.9.1" },
     { name = "seaborn", specifier = "==0.13.2" },
-    { name = "sentence-transformers", specifier = "==6.1.0" },
-    { name = "sentencepiece", specifier = "==0.2.2" },
-    { name = "transformers", specifier = "==5.19.0" },
+    { name = "tokenizers", specifier = "==0.23.2" },
     { name = "wordcloud", specifier = "==1.9.6" },
 ]
 
@@ -150,6 +152,16 @@ dev = [
     { name = "nbformat", specifier = "==5.11.1" },
     { name = "pytest", specifier = "==9.1.1" },
     { name = "ruff", specifier = "==0.16.10" },
+]
+embeddings = [
+    { name = "sentence-transformers", specifier = "==6.1.0" },
+    { name = "transformers", specifier = "==5.19.0" },
+]
+llm = [
+    { name = "mlx-lm", extras = ["train"], specifier = "==0.32.0" },
+    { name = "protobuf", specifier = "==7.36.2" },
+    { name = "sentencepiece", specifier = "==0.2.2" },
+    { name = "transformers", specifier = "==5.19.0" },
 ]
 
 [[package]]

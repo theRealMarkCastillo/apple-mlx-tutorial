@@ -23,12 +23,13 @@ _PAD_IDX = 0
 _UNK_IDX = 1
 _CHAR_PAD = "<PAD>"
 _CHAR_UNK = "<UNK>"
-_STRIP_CHARS = ".,!?;:\"()"
+_STRIP_CHARS = '.,!?;:"()'
 
 
 # ============================================================================
 # DEVICE MANAGEMENT
 # ============================================================================
+
 
 def has_gpu() -> bool:
     """Return True if an Apple Silicon GPU is available via MLX."""
@@ -68,8 +69,12 @@ def print_device_info() -> None:
     if on_gpu:
         print("   ✅ Using Apple Silicon GPU (Metal)")
         print("   ℹ️  MLX automatically optimizes for the GPU's Unified Memory.")
-        print("   ℹ️  Note: While Apple Silicon has an NPU (Neural Engine), MLX primarily")
-        print("       uses the powerful GPU for general-purpose training tasks like LSTMs.")
+        print(
+            "   ℹ️  Note: While Apple Silicon has an NPU (Neural Engine), MLX primarily"
+        )
+        print(
+            "       uses the powerful GPU for general-purpose training tasks like LSTMs."
+        )
     else:
         print("   ⚠️  Using CPU (Slower)")
         print("   ℹ️  Consider switching to GPU if on Apple Silicon.")
@@ -79,10 +84,13 @@ def print_device_info() -> None:
 # INTENT CLASSIFICATION
 # ============================================================================
 
+
 class IntentLSTM(nn.Module):
     """LSTM-based intent classifier."""
 
-    def __init__(self, vocab_size: int, embedding_dim: int, hidden_size: int, output_size: int):
+    def __init__(
+        self, vocab_size: int, embedding_dim: int, hidden_size: int, output_size: int
+    ):
         super().__init__()
         self.embedding = nn.Embedding(vocab_size, embedding_dim)
         self.lstm = nn.LSTM(embedding_dim, hidden_size)
@@ -205,6 +213,7 @@ def find_near_duplicates(
     must have at least ``min_tokens`` tokens, so a lone ``"hey"`` does not
     match every sentence that starts with it.
     """
+
     def padded(text: str) -> str:
         return " " + " ".join(tokenize(text)) + " "
 
@@ -228,7 +237,9 @@ def majority_baseline_accuracy(y_train, y_val) -> float:
     return sum(y == majority for y in y_val) / len(y_val)
 
 
-def bootstrap_ci(correct, n_boot: int = 2000, alpha: float = 0.05, seed: int = 0) -> tuple[float, float, float]:
+def bootstrap_ci(
+    correct, n_boot: int = 2000, alpha: float = 0.05, seed: int = 0
+) -> tuple[float, float, float]:
     """Return ``(accuracy, low, high)``: a percentile bootstrap interval.
 
     ``correct`` is a sequence of 0/1 outcomes. With 24 validation examples
@@ -239,7 +250,9 @@ def bootstrap_ci(correct, n_boot: int = 2000, alpha: float = 0.05, seed: int = 0
     if correct.size == 0:
         raise ValueError("correct must be nonempty")
     rng = np.random.default_rng(seed)
-    samples = rng.choice(correct, size=(n_boot, correct.size), replace=True).mean(axis=1)
+    samples = rng.choice(correct, size=(n_boot, correct.size), replace=True).mean(
+        axis=1
+    )
     low, high = np.quantile(samples, [alpha / 2, 1 - alpha / 2])
     return float(correct.mean()), float(low), float(high)
 
@@ -321,7 +334,9 @@ def make_train_step(model, optimizer, loss_fn, *, compile_step=True, max_grad_no
         optimizer.update(model, grads)
         return loss
 
-    return (mx.compile(step, inputs=state, outputs=state) if compile_step else step), state
+    return (
+        mx.compile(step, inputs=state, outputs=state) if compile_step else step
+    ), state
 
 
 def train_model(
@@ -361,12 +376,19 @@ def train_model(
         return logits[:, -1, :] if logits.ndim == 3 and y_in.ndim == 1 else logits
 
     def loss_fn(model, X_batch, y_batch):
-        return nn.losses.cross_entropy(logits_for(X_batch, y_batch), y_batch, reduction="mean")
+        return nn.losses.cross_entropy(
+            logits_for(X_batch, y_batch), y_batch, reduction="mean"
+        )
 
     model.train()
     optimizer = optim.Adam(learning_rate=learning_rate)
-    step, state = make_train_step(model, optimizer, loss_fn,
-                                  compile_step=compile_step, max_grad_norm=max_grad_norm)
+    step, state = make_train_step(
+        model,
+        optimizer,
+        loss_fn,
+        compile_step=compile_step,
+        max_grad_norm=max_grad_norm,
+    )
     mx.eval(state, X, y)
     rng = np.random.default_rng(seed)
     history = {"loss": [], "accuracy": []}
@@ -376,8 +398,8 @@ def train_model(
     def metrics(X_in, y_in):
         loss_sum, correct, count = 0.0, 0, 0
         for start in range(0, len(X_in), batch_size):
-            targets = y_in[start:start + batch_size]
-            logits = logits_for(X_in[start:start + batch_size], targets)
+            targets = y_in[start : start + batch_size]
+            logits = logits_for(X_in[start : start + batch_size], targets)
             loss = nn.losses.cross_entropy(logits, targets, reduction="sum")
             hits = mx.sum(mx.argmax(logits, axis=-1) == targets)
             mx.eval(loss, hits)
@@ -390,7 +412,7 @@ def train_model(
         model.train()
         indices = mx.array(rng.permutation(len(X)), dtype=mx.int32)
         for start in range(0, len(X), batch_size):
-            batch = indices[start:start + batch_size]
+            batch = indices[start : start + batch_size]
             loss = step(X[batch], y[batch])
             mx.eval(loss, state)
         model.eval()
@@ -417,7 +439,9 @@ def predict_proba(model, text: str, word_to_idx: dict, max_len: int) -> np.ndarr
     return np.array(mx.softmax(model(X), axis=-1)[0])
 
 
-def predict_label(model, text: str, word_to_idx: dict, label_names: list[str], max_len: int) -> tuple[str, float]:
+def predict_label(
+    model, text: str, word_to_idx: dict, label_names: list[str], max_len: int
+) -> tuple[str, float]:
     """Return ``(label, confidence)`` for one text."""
     probs = predict_proba(model, text, word_to_idx, max_len)
     pred_idx = int(probs.argmax())
@@ -439,6 +463,7 @@ def predict_intent(
 # SENTIMENT ANALYSIS
 # ============================================================================
 
+
 class SentimentLSTM(nn.Module):
     """LSTM-based sentiment analyzer with dropout.
 
@@ -447,8 +472,14 @@ class SentimentLSTM(nn.Module):
     (which ``predict_*`` helpers trigger via ``model.eval()``).
     """
 
-    def __init__(self, vocab_size: int, embedding_dim: int, hidden_size: int, output_size: int,
-                 dropout: float = 0.3):
+    def __init__(
+        self,
+        vocab_size: int,
+        embedding_dim: int,
+        hidden_size: int,
+        output_size: int,
+        dropout: float = 0.3,
+    ):
         super().__init__()
         self.embedding = nn.Embedding(vocab_size, embedding_dim)
         self.lstm = nn.LSTM(embedding_dim, hidden_size)
@@ -478,6 +509,7 @@ def predict_sentiment(
 # ============================================================================
 # TEXT GENERATION
 # ============================================================================
+
 
 class TextLSTM(nn.Module):
     """LSTM-based text generator."""
@@ -532,7 +564,7 @@ def text_to_sequences(
 
 def copied_fraction(held_out: str, rest: str, n: int = 20) -> float:
     """Fraction of ``n``-character substrings of ``held_out`` that also occur in ``rest``."""
-    grams = [held_out[i:i + n] for i in range(len(held_out) - n)]
+    grams = [held_out[i : i + n] for i in range(len(held_out) - n)]
     if not grams:
         raise ValueError("held_out must be longer than n")
     return sum(g in rest for g in grams) / len(grams)
@@ -545,8 +577,14 @@ def clean_holdout_slice(text: str, n_slices: int = 10, n: int = 20) -> tuple[int
     paragraph that also appears in training, which makes validation
     perplexity look far better than it is.
     """
-    bounds = [(k * len(text) // n_slices, (k + 1) * len(text) // n_slices) for k in range(n_slices)]
-    scores = [round(copied_fraction(text[s:e], text[:s] + "\0" + text[e:], n), 2) for s, e in bounds]
+    bounds = [
+        (k * len(text) // n_slices, (k + 1) * len(text) // n_slices)
+        for k in range(n_slices)
+    ]
+    scores = [
+        round(copied_fraction(text[s:e], text[:s] + "\0" + text[e:], n), 2)
+        for s, e in bounds
+    ]
     best = min(range(n_slices), key=lambda k: (scores[k], -k))
     return bounds[best]
 
@@ -593,7 +631,11 @@ def generate_text(
         # Sample logits directly; special vocabulary entries are never text.
         logits = logits[0, -1, :]
         logits = mx.where(mx.arange(logits.size) < 2, -float("inf"), logits)
-        next_token = mx.argmax(logits) if temperature == 0 else mx.random.categorical(logits / temperature)
+        next_token = (
+            mx.argmax(logits)
+            if temperature == 0
+            else mx.random.categorical(logits / temperature)
+        )
         next_idx = next_token.item()  # Materializes this step before extending context.
         generated += idx_to_char[next_idx]
         current_seq = current_seq[1:] + [next_idx]
@@ -604,6 +646,7 @@ def generate_text(
 # ============================================================================
 # SAMPLE DATA LOADERS
 # ============================================================================
+
 
 def _find_data_file(filename: str) -> Path | None:
     """Find ``filename`` relative to the repo root, the cwd, or common subdirs."""
@@ -627,7 +670,9 @@ def _find_data_file(filename: str) -> Path | None:
     return None
 
 
-def load_sample_intent_data() -> tuple[list[str], list[str], dict[str, int], dict[str, int]]:
+def load_sample_intent_data() -> tuple[
+    list[str], list[str], dict[str, int], dict[str, int]
+]:
     """Load sample intent classification data from ``data/intent_samples/data.json``.
 
     Returns ``(texts, labels, vocab, intent2idx)``. ``vocab`` maps token -> id
@@ -644,20 +689,36 @@ def load_sample_intent_data() -> tuple[list[str], list[str], dict[str, int], dic
     else:
         print("Using hardcoded intent data (synthetic data not found)")
         texts = [
-            "Hello", "Hi there", "Good morning",
-            "What's the weather", "Tell me the time", "How are you",
-            "Turn on the light", "Set a timer", "Play music",
+            "Hello",
+            "Hi there",
+            "Good morning",
+            "What's the weather",
+            "Tell me the time",
+            "How are you",
+            "Turn on the light",
+            "Set a timer",
+            "Play music",
         ]
-        labels = ["greeting", "greeting", "greeting",
-                  "question", "question", "question",
-                  "command", "command", "command"]
+        labels = [
+            "greeting",
+            "greeting",
+            "greeting",
+            "question",
+            "question",
+            "question",
+            "command",
+            "command",
+            "command",
+        ]
 
     vocab, _word_to_idx = create_vocabulary(texts)
     intent2idx = {"greeting": 0, "question": 1, "command": 2}
     return texts, labels, vocab, intent2idx
 
 
-def load_sample_sentiment_data() -> tuple[list[str], list[str], dict[str, int], dict[str, int]]:
+def load_sample_sentiment_data() -> tuple[
+    list[str], list[str], dict[str, int], dict[str, int]
+]:
     """Load sample sentiment data from ``data/sentiment_samples/data.json``.
 
     Returns ``(texts, labels, vocab, sentiment2idx)``.
@@ -673,13 +734,27 @@ def load_sample_sentiment_data() -> tuple[list[str], list[str], dict[str, int], 
     else:
         print("Using hardcoded sentiment data (synthetic data not found)")
         texts = [
-            "I love this", "This is amazing", "Fantastic",
-            "I hate this", "This is terrible", "Awful",
-            "It's okay", "Not bad", "Average",
+            "I love this",
+            "This is amazing",
+            "Fantastic",
+            "I hate this",
+            "This is terrible",
+            "Awful",
+            "It's okay",
+            "Not bad",
+            "Average",
         ]
-        labels = ["positive", "positive", "positive",
-                  "negative", "negative", "negative",
-                  "neutral", "neutral", "neutral"]
+        labels = [
+            "positive",
+            "positive",
+            "positive",
+            "negative",
+            "negative",
+            "negative",
+            "neutral",
+            "neutral",
+            "neutral",
+        ]
 
     vocab, _word_to_idx = create_vocabulary(texts)
     sentiment2idx = {"negative": 0, "neutral": 1, "positive": 2}
@@ -710,7 +785,9 @@ def load_real_dataset(name: str):
     """
     paths = [_find_data_file(f"{name}/{split}.json") for split in ("train", "test")]
     if not all(paths):
-        print(f"{name} not found. Download it with: python scripts/download_datasets.py --{name}")
+        print(
+            f"{name} not found. Download it with: python scripts/download_datasets.py --{name}"
+        )
         return None
     splits = []
     for path in paths:
@@ -725,7 +802,9 @@ def load_rag_eval_queries() -> list[dict]:
     """Load labeled retrieval queries: ``{"query", "relevant_doc", "kind"}``."""
     data_path = _find_data_file("rag_samples/eval_queries.json")
     if data_path is None:
-        raise FileNotFoundError("Run `make setup-samples` to create rag_samples/eval_queries.json")
+        raise FileNotFoundError(
+            "Run `make setup-samples` to create rag_samples/eval_queries.json"
+        )
     with open(data_path, "r", encoding="utf-8") as f:
         return json.load(f)
 
@@ -752,6 +831,7 @@ def load_rag_knowledge_base() -> list[str]:
 # ============================================================================
 # MODEL PERSISTENCE & EVALUATION
 # ============================================================================
+
 
 def save_model(model: nn.Module, path: str) -> None:
     """Save model weights to ``path`` (``model.save_weights`` handles the format)."""

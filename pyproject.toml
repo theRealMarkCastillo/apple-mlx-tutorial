@@ -6,7 +6,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "mlx==0.32.3",
-    "mlx-lm[train]==0.32.0",
+    "tokenizers==0.23.2",
     "numpy==2.5.3",
     "scikit-learn==1.9.1",
     "datasets==5.1.0",
@@ -17,14 +17,12 @@ dependencies = [
     "plotly==7.1.0",
     "wordcloud==1.9.6",
     "ipywidgets==8.1.9",
-    # Notebook 10 uses PyTorch through Sentence Transformers, not MLX.
-    "sentence-transformers==6.1.0",
-    "transformers==5.19.0",
-    "sentencepiece==0.2.2",
-    "protobuf==7.36.2",
 ]
 
 [dependency-groups]
+llm = ["mlx-lm[train]==0.32.0", "transformers==5.19.0", "sentencepiece==0.2.2", "protobuf==7.36.2"]
+embeddings = ["sentence-transformers==6.1.0", "transformers==5.19.0"]
+
 dev = [
     "pytest==9.1.1",
     "nbformat==5.11.1",
@@ -49,3 +47,7 @@ select = ["F821", "E9"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
+
+[tool.ruff.format]
+# Preserve teaching-cell layouts; format the reusable Python code.
+exclude = ["*.ipynb"]

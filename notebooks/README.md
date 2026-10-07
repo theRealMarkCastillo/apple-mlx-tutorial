@@ -34,13 +34,17 @@ notebook at full budget and fails if one of those claims stops being true.
 | 06 | `06_Attention_Mechanism` | Implement attention, why √d, *learned* attention, causal masks | 45 min |
 | 06b | `06b_Prompt_Engineering` | Softmax dilution, similarity, no inherent position bias, needle-in-a-haystack on a real LLM | 45 min |
 | 07 | `07_Build_NanoGPT` | A GPT from scratch, early stopping, attention-head maps, positional ablation | 90 min |
-| 08 | `08_Fine_Tuning_with_LoRA` | LoRA/QLoRA, prompt masking, measuring base vs fine-tuned, when fine-tuning pays off | 60 min + training |
+| 07b | `07b_Modern_Decoder` | Train-only BPE, RoPE, RMSNorm, SwiGLU, GQA, cached/full equivalence | 60 min |
+| 08 | `08_Fine_Tuning_with_LoRA` | LoRA/QLoRA, strict output scoring, development selection, frozen final evaluation | 60 min + training |
 | 09 | `09_RAG_from_Scratch` | Embedding, retrieval, recall@k and MRR, IDF, refusal thresholds | 60 min |
 | 10 | `10_Embeddings_Deep_Dive` | Learned embeddings vs word counts, model comparison, embeddings as features | 60 min |
+| 11 | `11_Local_LLM_Inference` | Weight/KV quantization, prefill vs decode, prefix reuse, latency and memory | 45 min |
+| 12 | `12_Hybrid_Retrieval` | BM25, dense retrieval, RRF, reranking, chunk relevance, citation checks | 60 min |
 
-Notebooks **08** and **10** download pretrained models and are not part of
+Notebooks **08**, **10**, and **11** download pretrained models and are not part of
 `make smoke`/`make validate`; run them yourself, or use
-`uv run --locked python scripts/check_notebooks.py --execute --include-manual --notebook 08`.
+`uv run --locked --group llm python scripts/check_notebooks.py --execute --include-manual --notebook 08 --download-budget-gb 2`.
+See the root README for optional groups and explicit download budgets.
 Optional cells (real datasets, the LoRA rank sweep, the needle-in-a-haystack
 test) are switched off or skip themselves when their data is missing.
 
@@ -48,8 +52,8 @@ test) are switched off or skip themselves when their data is missing.
 
 * **Quick tour (2 h):** 00 → 01 → 03 → 06 → 07.
 * **Solid foundations (6 h):** 00b → 01 → 02 → 03 → 05 → 06 → 07.
-* **LLM applications (5 h):** 00b → 06 → 06b → 08 → 09 → 10.
-* **Everything, in order (12 h):** 00 → 00b → 01 → … → 10.
+* **LLM applications (7 h):** 00b → 06 → 06b → 08 → 09 → 10 → 11 → 12.
+* **Everything, in order (15 h):** 00 → 00b → 01 → … → 12 (including 07b).
 
 ## Data
 
@@ -63,8 +67,8 @@ optional "real data" cells; see `PRODUCTION_README.md` for formats.
 |---|---|
 | `intent_samples/data.json` | 00, 01, 04, 05, 10 |
 | `sentiment_samples/data.json` | 00, 02, 04, 05 |
-| `text_gen_samples/corpus.txt` | 00, 03, 04, 07 |
-| `rag_samples/knowledge_base.json`, `eval_queries.json` | 06b, 09, 10 |
+| `text_gen_samples/corpus.txt` | 00, 03, 04, 07, 07b |
+| `rag_samples/knowledge_base.json`, `eval_queries.json` | 06b, 09, 10, 12 |
 | `train.jsonl`, `valid.jsonl` | 08 |
 
 ## Shared code
@@ -88,3 +92,15 @@ the evaluation toolkit (`group_train_val_split`, `find_near_duplicates`,
   the text says what to compare rather than quoting a value.
 * **Stale weights:** notebook 04 saves to `notebooks/saved_models/` and 08 to
   `notebooks/adapters/`. Delete them after changing model sizes.
+
+## Evaluation and provenance
+
+07b compares architectures at equal token budgets, with one train-only tokenizer.
+08 separates label accuracy from strict format compliance and freezes adapter
+choices on development data before final testing. 10 calibrates refusal on
+document-disjoint questions and tests on harder unseen negatives. 11 separates
+prefix-build cost from cache-hit latency. 12 preserves source relevance when
+changing chunk size; citation-ID validity alone is not factual entailment.
+
+All pretrained loads use `config/models.json`. CLI runs save records under
+`results/<run-id>/`; inspect them alongside executed notebooks.

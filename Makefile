@@ -4,11 +4,15 @@ DATA_DIR ?= data
 RUN := $(UV) run --locked
 
 .PHONY: help install setup samples setup-samples setup-real download run \
-        dev lint check test smoke validate render clean-data clean-caches clean
+        dev lint format format-check setup-llm setup-embeddings setup-all check test smoke validate render clean-data clean-caches clean
 
 help:
 	@echo "make setup          Sync locked dependencies and generate sample data"
 	@echo "make run            Launch Jupyter in the uv-managed environment"
+	@echo "make setup-llm      Add MLX-LM / LoRA dependencies"
+	@echo "make setup-embeddings Add Sentence Transformers / PyTorch"
+	@echo "make setup-all      Install both optional groups"
+	@echo "make format-check   Check reusable Python formatting"
 	@echo "make setup-samples  Generate sample data without installing dependencies"
 	@echo "make setup-real     Download SNIPS, IMDB, Banking77, and WikiText"
 	@echo "make check          Run lint, notebook validation, and regression tests"
@@ -35,10 +39,25 @@ setup-real:
 
 download: setup-real
 
+setup-llm:
+	$(UV) sync --locked --group llm
+
+setup-embeddings:
+	$(UV) sync --locked --group embeddings
+
+setup-all:
+	$(UV) sync --locked --all-groups
+
+format:
+	$(RUN) ruff format notebooks scripts tests
+
+format-check:
+	$(RUN) ruff format --check notebooks scripts tests
+
 lint:
 	$(RUN) ruff check notebooks scripts tests
 
-check: lint
+check: lint format-check
 	$(RUN) python scripts/check_notebooks.py
 	$(RUN) python -m pytest -q
 

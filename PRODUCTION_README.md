@@ -134,10 +134,30 @@ are not themselves Core ML packages. Deployment conversion is outside this repo.
 regressions for masking, padding, compiled random state, partial batches,
 checkpoint round-trips, generation, dataset handling, and the evaluation
 helpers (tokenizer, grouped splits, near-duplicate detection, bootstrap
-intervals). `make smoke` executes the offline notebooks (00–07, 06b, 09, and
-00b) with 1-epoch training in a temporary copy, to catch crashes quickly.
+intervals). `make smoke` executes the offline notebooks (00–07b, 09, and 12) with 1-epoch training in a temporary copy, to catch crashes quickly.
 `make validate` runs the same notebooks at full training budgets and also
 enforces each notebook's `sanity_check` claims (for example, that a model beats
 the majority baseline), so a lesson whose narrative stops matching its results
-fails the build. Notebooks 08 and 10 need pretrained model downloads and
-manual execution (`--include-manual`); they are excluded from the offline suites.
+fails the build. Notebooks 08, 10, and 11 need optional dependency groups and explicit model
+download budgets; they execute with `--include-manual`. Notebook 12's dense
+retrieval and reranking require the `embeddings` group and `--advanced`.
+See the root README for local validation commands and pretrained lesson setup.
+
+## Reproducible model and evaluation artifacts
+
+Pin a model's full Hub commit in `config/models.json`, including its tokenizer
+files. Record the corpus revision/hash, split policy, adapter configuration and
+weight hashes, prompt format, decoding settings, hardware, and package lock.
+The local notebook runner and `experiment_utils.write_record` capture these in ignored JSON
+artifacts under `results/`; archive them alongside reported measurements.
+
+Choose refusal thresholds on calibration data and compare hyperparameters on
+development data. Freeze them before running the final test. Expand the tiny
+synthetic splits before making deployment or model-quality claims. For RAG,
+measure candidate recall separately from reranking, and assess citation support
+separately from whether a citation names a real retrieved document.
+
+Use notebook 11 to measure prefill, first-token latency, generation throughput,
+and MLX peak memory under weight/KV quantization. Cache reuse requires the same
+model/adapter and exact token prefix; it must not accidentally include a previous
+user's answer. Compare task quality under each quantization setting.

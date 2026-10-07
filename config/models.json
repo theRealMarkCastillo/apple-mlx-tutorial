@@ -1,0 +1,26 @@
+{
+  "qwen_chat": {
+    "repo_id": "mlx-community/Qwen2.5-3B-Instruct-4bit",
+    "revision": "4f83f8f146fdf28b512a06562b671d7af4fab457"
+  },
+  "minilm": {
+    "repo_id": "sentence-transformers/all-MiniLM-L6-v2",
+    "revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41"
+  },
+  "mpnet": {
+    "repo_id": "sentence-transformers/all-mpnet-base-v2",
+    "revision": "e8c3b32edf5434bc2275fc9bab85f82640a19130"
+  },
+  "qwen_embedding": {
+    "repo_id": "Qwen/Qwen3-Embedding-0.6B",
+    "revision": "97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3"
+  },
+  "reranker": {
+    "repo_id": "cross-encoder/ms-marco-MiniLM-L6-v2",
+    "revision": "233902d25c440f23af6f7d6e94d2946bac0bee0a"
+  },
+  "qwen_small": {
+    "repo_id": "Qwen/Qwen2.5-0.5B-Instruct",
+    "revision": "7ae557604adf67be50417f59c2c2f167def9a775"
+  }
+}

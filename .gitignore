@@ -133,3 +133,7 @@ notebooks/adapters/train.log
 
 # Executed notebook copies from `make render`
 rendered/
+
+# Reproducibility records and generated instruction-tuning data
+results/
+notebooks/adapters/data_instructed/

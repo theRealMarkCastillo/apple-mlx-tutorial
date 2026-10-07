@@ -23,9 +23,11 @@ from pathlib import Path
 # Add repo root to sys.path so we can import the synthetic-data generator.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+
 def load_dataset(*args, **kwargs):
     """Import the optional network loader only for real dataset downloads."""
     from datasets import load_dataset as hf_load_dataset
+
     return hf_load_dataset(*args, **kwargs)
 
 
@@ -99,14 +101,28 @@ class DatasetDownloader:
         # The original SNIPS benchmark is JSON, so no removed HF dataset
         # script API or unverified mirror is needed.
         from urllib.request import urlopen
-        intents = ["AddToPlaylist", "BookRestaurant", "GetWeather", "PlayMusic",
-                   "RateBook", "SearchCreativeWork", "SearchScreeningEvent"]
+
+        intents = [
+            "AddToPlaylist",
+            "BookRestaurant",
+            "GetWeather",
+            "PlayMusic",
+            "RateBook",
+            "SearchCreativeWork",
+            "SearchScreeningEvent",
+        ]
         base = "https://raw.githubusercontent.com/snipsco/nlu-benchmark/master/2017-06-custom-intent-engines"
         train_texts, train_labels, test_texts, test_labels = [], [], [], []
         for intent in intents:
-            for split, texts, labels in [("train", train_texts, train_labels),
-                                         ("validate", test_texts, test_labels)]:
-                filename = f"train_{intent}_full.json" if split == "train" else f"validate_{intent}.json"
+            for split, texts, labels in [
+                ("train", train_texts, train_labels),
+                ("validate", test_texts, test_labels),
+            ]:
+                filename = (
+                    f"train_{intent}_full.json"
+                    if split == "train"
+                    else f"validate_{intent}.json"
+                )
                 with urlopen(f"{base}/{intent}/{filename}", timeout=60) as response:
                     raw = response.read()
                 # The original benchmark includes both UTF-8 and Latin-1 files.
@@ -190,7 +206,8 @@ class DatasetDownloader:
             train_labels.extend([label] * len(texts))
 
         train_texts, train_labels, test_texts, test_labels = stratified_holdout(
-            train_texts, train_labels,
+            train_texts,
+            train_labels,
         )
 
         with open(output_dir / "train.json", "w", encoding="utf-8") as f:
@@ -212,9 +229,13 @@ class DatasetDownloader:
         # Load the publisher's CSV files with the generic builder. HF's old
         # banking77.py loader is incompatible with datasets 4+.
         base = "https://raw.githubusercontent.com/PolyAI-LDN/task-specific-datasets/master/banking_data"
-        dataset = load_dataset("csv", data_files={
-            "train": f"{base}/train.csv", "test": f"{base}/test.csv",
-        })
+        dataset = load_dataset(
+            "csv",
+            data_files={
+                "train": f"{base}/train.csv",
+                "test": f"{base}/test.csv",
+            },
+        )
 
         output_dir = self.data_dir / "banking77"
         output_dir.mkdir(exist_ok=True)
@@ -245,9 +266,11 @@ class DatasetDownloader:
         output_dir = self.data_dir / "wikitext"
         output_dir.mkdir(exist_ok=True)
 
-        for split, filename in [("train", "train.txt"),
-                                ("validation", "validation.txt"),
-                                ("test", "test.txt")]:
+        for split, filename in [
+            ("train", "train.txt"),
+            ("validation", "validation.txt"),
+            ("test", "test.txt"),
+        ]:
             with open(output_dir / filename, "w", encoding="utf-8") as f:
                 for ex in dataset[split]:
                     text = ex["text"].strip()
@@ -281,7 +304,9 @@ class DatasetDownloader:
         generate_synthetic_data.generate_intent_data(output_dir=str(self.data_dir))
         generate_synthetic_data.generate_sentiment_data(output_dir=str(self.data_dir))
         generate_synthetic_data.generate_text_corpus(output_dir=str(self.data_dir))
-        generate_synthetic_data.generate_rag_knowledge_base(output_dir=str(self.data_dir))
+        generate_synthetic_data.generate_rag_knowledge_base(
+            output_dir=str(self.data_dir)
+        )
         generate_synthetic_data.generate_rag_eval_queries(output_dir=str(self.data_dir))
         generate_synthetic_data.generate_lora_chat_data(output_dir=str(self.data_dir))
 
@@ -289,19 +314,35 @@ class DatasetDownloader:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Download NLP datasets")
     parser.add_argument("--all", action="store_true", help="Download all datasets")
-    parser.add_argument("--sentiment", action="store_true", help="Download sentiment datasets")
-    parser.add_argument("--intent", action="store_true", help="Download intent datasets")
-    parser.add_argument("--generation", action="store_true", help="Download text generation datasets")
+    parser.add_argument(
+        "--sentiment", action="store_true", help="Download sentiment datasets"
+    )
+    parser.add_argument(
+        "--intent", action="store_true", help="Download intent datasets"
+    )
+    parser.add_argument(
+        "--generation", action="store_true", help="Download text generation datasets"
+    )
 
     parser.add_argument("--imdb", action="store_true", help="Download IMDB reviews")
     parser.add_argument("--snips", action="store_true", help="Download SNIPS intents")
-    parser.add_argument("--banking77", action="store_true", help="Download Banking77 intents")
+    parser.add_argument(
+        "--banking77", action="store_true", help="Download Banking77 intents"
+    )
     parser.add_argument("--wikitext", action="store_true", help="Download WikiText")
-    parser.add_argument("--samples", action="store_true", help="Create small sample datasets")
+    parser.add_argument(
+        "--samples", action="store_true", help="Create small sample datasets"
+    )
 
-    parser.add_argument("--data-dir", default="data", help="Directory to save datasets (default: data)")
-    parser.add_argument("--max-samples", type=int, default=25000,
-                        help="Maximum samples for large datasets (default: 25000 — IMDB's full size)")
+    parser.add_argument(
+        "--data-dir", default="data", help="Directory to save datasets (default: data)"
+    )
+    parser.add_argument(
+        "--max-samples",
+        type=int,
+        default=25000,
+        help="Maximum samples for large datasets (default: 25000 — IMDB's full size)",
+    )
 
     args = parser.parse_args()
 

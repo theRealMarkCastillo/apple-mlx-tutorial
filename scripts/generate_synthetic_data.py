@@ -17,49 +17,141 @@ from pathlib import Path
 DEFAULT_SEED = 42
 
 GREETINGS = [
-    "hello", "hi", "hey", "good morning", "good afternoon", "good evening",
-    "hi there", "hello world", "greetings", "hey there", "what's up",
-    "howdy", "yo", "hi friend", "hello everyone", "good day", "morning",
-    "evening", "hi folks", "hello team",
+    "hello",
+    "hi",
+    "hey",
+    "good morning",
+    "good afternoon",
+    "good evening",
+    "hi there",
+    "hello world",
+    "greetings",
+    "hey there",
+    "what's up",
+    "howdy",
+    "yo",
+    "hi friend",
+    "hello everyone",
+    "good day",
+    "morning",
+    "evening",
+    "hi folks",
+    "hello team",
 ]
 
 QUESTIONS = [
-    "what time is it", "how do I do this", "when is the meeting",
-    "where is the office", "who is the ceo", "why is the sky blue",
-    "what is the weather like", "how much does it cost", "can you help me",
-    "what is your name", "how does this work", "where can I find help",
-    "what is the capital of France", "when does the store open",
-    "who are you", "why is this not working", "what are the hours",
-    "how long will it take", "is this correct", "can I ask a question",
+    "what time is it",
+    "how do I do this",
+    "when is the meeting",
+    "where is the office",
+    "who is the ceo",
+    "why is the sky blue",
+    "what is the weather like",
+    "how much does it cost",
+    "can you help me",
+    "what is your name",
+    "how does this work",
+    "where can I find help",
+    "what is the capital of France",
+    "when does the store open",
+    "who are you",
+    "why is this not working",
+    "what are the hours",
+    "how long will it take",
+    "is this correct",
+    "can I ask a question",
 ]
 
 COMMANDS = [
-    "turn on the lights", "play music", "stop", "go away", "open the door",
-    "close the window", "set an alarm", "remind me to call mom",
-    "send an email", "call john", "turn off the tv", "volume up",
-    "volume down", "mute", "pause", "resume", "skip track",
-    "show me the map", "navigate home", "lock the door",
+    "turn on the lights",
+    "play music",
+    "stop",
+    "go away",
+    "open the door",
+    "close the window",
+    "set an alarm",
+    "remind me to call mom",
+    "send an email",
+    "call john",
+    "turn off the tv",
+    "volume up",
+    "volume down",
+    "mute",
+    "pause",
+    "resume",
+    "skip track",
+    "show me the map",
+    "navigate home",
+    "lock the door",
 ]
 
 POSITIVE_PHRASES = [
-    "This is great", "I love this", "Amazing work", "Fantastic", "Excellent",
-    "Very good", "Best ever", "So happy", "Wonderful experience", "Highly recommend",
-    "Perfect", "Outstanding", "Brilliant", "Superb", "Awesome", "Delightful",
-    "Enjoyed it a lot", "Very satisfied", "Top notch", "Five stars",
+    "This is great",
+    "I love this",
+    "Amazing work",
+    "Fantastic",
+    "Excellent",
+    "Very good",
+    "Best ever",
+    "So happy",
+    "Wonderful experience",
+    "Highly recommend",
+    "Perfect",
+    "Outstanding",
+    "Brilliant",
+    "Superb",
+    "Awesome",
+    "Delightful",
+    "Enjoyed it a lot",
+    "Very satisfied",
+    "Top notch",
+    "Five stars",
 ]
 
 NEGATIVE_PHRASES = [
-    "This is terrible", "I hate this", "Worst ever", "Awful", "Bad experience",
-    "Very disappointed", "Waste of time", "Do not buy", "Horrible", "Poor quality",
-    "Useless", "Broken", "Garbage", "Annoying", "Frustrating", "Not good",
-    "Regret buying", "Terrible service", "Disaster", "Never again",
+    "This is terrible",
+    "I hate this",
+    "Worst ever",
+    "Awful",
+    "Bad experience",
+    "Very disappointed",
+    "Waste of time",
+    "Do not buy",
+    "Horrible",
+    "Poor quality",
+    "Useless",
+    "Broken",
+    "Garbage",
+    "Annoying",
+    "Frustrating",
+    "Not good",
+    "Regret buying",
+    "Terrible service",
+    "Disaster",
+    "Never again",
 ]
 
 NEUTRAL_PHRASES = [
-    "It is okay", "Average", "Not bad", "Could be better", "It is what it is",
-    "Fine", "Mediocre", "Nothing special", "Just okay", "Standard",
-    "As expected", "Normal", "Typical", "Fair", "So-so", "Alright",
-    "Middle of the road", "Passable", "Decent", "Acceptable",
+    "It is okay",
+    "Average",
+    "Not bad",
+    "Could be better",
+    "It is what it is",
+    "Fine",
+    "Mediocre",
+    "Nothing special",
+    "Just okay",
+    "Standard",
+    "As expected",
+    "Normal",
+    "Typical",
+    "Fair",
+    "So-so",
+    "Alright",
+    "Middle of the road",
+    "Passable",
+    "Decent",
+    "Acceptable",
 ]
 
 POSITIVE_ADJECTIVES = ["great", "good", "nice", "cool", "amazing"]
@@ -172,7 +264,9 @@ def generate_text_corpus(output_dir: str = "data") -> Path:
     return output_path
 
 
-def generate_rag_knowledge_base(output_dir: str = "data", seed: int = DEFAULT_SEED) -> Path:
+def generate_rag_knowledge_base(
+    output_dir: str = "data", seed: int = DEFAULT_SEED
+) -> Path:
     """Generate the small RAG knowledge base (real docs + a few filler rows)."""
     _seed_random(seed)
     print("Generating synthetic RAG Knowledge Base...")
@@ -203,7 +297,9 @@ def generate_rag_knowledge_base(output_dir: str = "data", seed: int = DEFAULT_SE
     topics = ["MLX", "Apple Silicon", "Deep Learning", "LLMs"]
     for i in range(30):
         topic = random.choice(topics)
-        documents.append(f"Synthetic document #{i} about {topic} containing random facts to increase the database size.")
+        documents.append(
+            f"Synthetic document #{i} about {topic} containing random facts to increase the database size."
+        )
 
     output_path = Path(output_dir) / "rag_samples" / "knowledge_base.json"
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -219,23 +315,55 @@ def generate_rag_knowledge_base(output_dir: str = "data", seed: int = DEFAULT_SE
 # words, which is where bag-of-words retrieval breaks down.
 RAG_EVAL_QUERIES: list[tuple[str, int, str]] = [
     ("What is MLX?", 0, "lexical"),
-    ("Which library did Apple build for training models on Mac chips?", 0, "paraphrase"),
+    (
+        "Which library did Apple build for training models on Mac chips?",
+        0,
+        "paraphrase",
+    ),
     ("How does unified memory let the CPU and GPU share memory?", 1, "lexical"),
-    ("Do I have to copy tensors between the processor and graphics card on a Mac?", 1, "paraphrase"),
+    (
+        "Do I have to copy tensors between the processor and graphics card on a Mac?",
+        1,
+        "paraphrase",
+    ),
     ("What is lazy evaluation in MLX?", 2, "lexical"),
     ("Why isn't my array calculated until I print it?", 2, "paraphrase"),
     ("Why are LSTMs hard to parallelize?", 3, "lexical"),
-    ("What is the drawback of recurrent nets that read one word at a time?", 3, "paraphrase"),
-    ("How do transformers use attention to process sequences in parallel?", 4, "lexical"),
-    ("Which architecture looks at every token at once instead of step by step?", 4, "paraphrase"),
+    (
+        "What is the drawback of recurrent nets that read one word at a time?",
+        3,
+        "paraphrase",
+    ),
+    (
+        "How do transformers use attention to process sequences in parallel?",
+        4,
+        "lexical",
+    ),
+    (
+        "Which architecture looks at every token at once instead of step by step?",
+        4,
+        "paraphrase",
+    ),
     ("What does LoRA do to pre-trained weights?", 5, "lexical"),
-    ("How can I adapt a big network by training only a few small extra matrices?", 5, "paraphrase"),
+    (
+        "How can I adapt a big network by training only a few small extra matrices?",
+        5,
+        "paraphrase",
+    ),
     ("How does quantization reduce the precision of model weights?", 6, "lexical"),
     ("How can I shrink a network so it needs less RAM?", 6, "paraphrase"),
     ("What is RAG retrieval augmented generation?", 7, "lexical"),
-    ("How can a chatbot answer with facts newer than its training cutoff?", 7, "paraphrase"),
+    (
+        "How can a chatbot answer with facts newer than its training cutoff?",
+        7,
+        "paraphrase",
+    ),
     ("What do vector databases store?", 8, "lexical"),
-    ("How do I find documents that mean the same thing even with different words?", 8, "paraphrase"),
+    (
+        "How do I find documents that mean the same thing even with different words?",
+        8,
+        "paraphrase",
+    ),
     ("What is the Neural Engine NPU?", 9, "lexical"),
     ("Which dedicated chip on a Mac speeds up inference?", 9, "paraphrase"),
     ("Does MLX support automatic differentiation?", 10, "lexical"),
@@ -249,21 +377,36 @@ RAG_EVAL_QUERIES: list[tuple[str, int, str]] = [
     ("What is few-shot learning?", 14, "lexical"),
     ("Should I include a couple of worked examples in my request?", 14, "paraphrase"),
     ("What is chain-of-thought prompting?", 15, "lexical"),
-    ("How do I get the assistant to show its working before answering?", 15, "paraphrase"),
+    (
+        "How do I get the assistant to show its working before answering?",
+        15,
+        "paraphrase",
+    ),
     ("What is hallucination in an LLM?", 16, "lexical"),
     ("Why does the chatbot confidently make things up?", 16, "paraphrase"),
     ("What does temperature control?", 17, "lexical"),
     ("How do I make generated text less random?", 17, "paraphrase"),
     ("What is top-k sampling?", 18, "lexical"),
-    ("How do I restrict generation to the few most probable candidates?", 18, "paraphrase"),
+    (
+        "How do I restrict generation to the few most probable candidates?",
+        18,
+        "paraphrase",
+    ),
     ("What is top-p nucleus sampling?", 19, "lexical"),
-    ("Which decoding method keeps the smallest set whose probabilities add up to a threshold?", 19, "paraphrase"),
+    (
+        "Which decoding method keeps the smallest set whose probabilities add up to a threshold?",
+        19,
+        "paraphrase",
+    ),
 ]
 
 
 def generate_rag_eval_queries(output_dir: str = "data") -> Path:
     """Write labeled retrieval queries to ``rag_samples/eval_queries.json``."""
-    rows = [{"query": q, "relevant_doc": doc, "kind": kind} for q, doc, kind in RAG_EVAL_QUERIES]
+    rows = [
+        {"query": q, "relevant_doc": doc, "kind": kind}
+        for q, doc, kind in RAG_EVAL_QUERIES
+    ]
     output_path = Path(output_dir) / "rag_samples" / "eval_queries.json"
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with open(output_path, "w", encoding="utf-8") as f:
@@ -281,29 +424,60 @@ def generate_rag_eval_queries(output_dir: str = "data") -> Path:
 # assistant might see.
 INTENT_TEMPLATES: dict[str, list[str]] = {
     "greeting": [
-        "Hello!", "Hi there.", "Hey, how's it going?", "Good morning!",
-        "Hi!", "Hey!", "Hello, can you help me?", "Hi, what's up?",
-        "Greetings.", "Hey there!", "Good afternoon.", "Good evening.",
-        "Yo!", "Howdy.", "Hi friend.", "Hello world.",
+        "Hello!",
+        "Hi there.",
+        "Hey, how's it going?",
+        "Good morning!",
+        "Hi!",
+        "Hey!",
+        "Hello, can you help me?",
+        "Hi, what's up?",
+        "Greetings.",
+        "Hey there!",
+        "Good afternoon.",
+        "Good evening.",
+        "Yo!",
+        "Howdy.",
+        "Hi friend.",
+        "Hello world.",
     ],
     "question": [
-        "What's the weather today?", "What time is the meeting?",
-        "How do I reset my password?", "Where can I find help?",
-        "Why is the network slow?", "Who is on call this week?",
-        "When does the store open?", "How much does this cost?",
-        "What is your name?", "Can you help me with my account?",
-        "How long will this take?", "Is this correct?",
-        "What are the office hours?", "Where is the office located?",
+        "What's the weather today?",
+        "What time is the meeting?",
+        "How do I reset my password?",
+        "Where can I find help?",
+        "Why is the network slow?",
+        "Who is on call this week?",
+        "When does the store open?",
+        "How much does this cost?",
+        "What is your name?",
+        "Can you help me with my account?",
+        "How long will this take?",
+        "Is this correct?",
+        "What are the office hours?",
+        "Where is the office located?",
     ],
     "command": [
-        "Turn on the lights.", "Play some music.", "Stop the music.",
-        "Set a timer for 10 minutes.", "Send an email to John.",
-        "Open the door.", "Close the window.", "Remind me to call mom.",
-        "Navigate home.", "Volume up.", "Volume down.", "Mute the audio.",
-        "Pause the video.", "Skip this track.", "Lock the door.",
-        "Turn off the TV.", "Schedule a meeting for tomorrow at 3pm.",
+        "Turn on the lights.",
+        "Play some music.",
+        "Stop the music.",
+        "Set a timer for 10 minutes.",
+        "Send an email to John.",
+        "Open the door.",
+        "Close the window.",
+        "Remind me to call mom.",
+        "Navigate home.",
+        "Volume up.",
+        "Volume down.",
+        "Mute the audio.",
+        "Pause the video.",
+        "Skip this track.",
+        "Lock the door.",
+        "Turn off the TV.",
+        "Schedule a meeting for tomorrow at 3pm.",
     ],
 }
+
 
 def generate_lora_chat_data(
     n_train: int = 800,
@@ -382,14 +556,29 @@ def _sample_chat(rng: random.Random, templates: dict[str, list[str]]) -> dict:
 # CLI
 # ---------------------------------------------------------------------------
 
+
 def _build_arg_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Generate synthetic data for the MLX NLP tutorial.")
-    parser.add_argument("--data-dir", default="data", help="Output directory (default: data)")
-    parser.add_argument("--seed", type=int, default=DEFAULT_SEED,
-                        help=f"Random seed for reproducibility (default: {DEFAULT_SEED})")
-    parser.add_argument("--lora-train", type=int, default=800, help="LoRA train records (default: 800)")
-    parser.add_argument("--lora-val", type=int, default=200, help="LoRA val records (default: 200)")
-    parser.add_argument("--skip-lora", action="store_true", help="Skip LoRA chat data generation")
+    parser = argparse.ArgumentParser(
+        description="Generate synthetic data for the MLX NLP tutorial."
+    )
+    parser.add_argument(
+        "--data-dir", default="data", help="Output directory (default: data)"
+    )
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=DEFAULT_SEED,
+        help=f"Random seed for reproducibility (default: {DEFAULT_SEED})",
+    )
+    parser.add_argument(
+        "--lora-train", type=int, default=800, help="LoRA train records (default: 800)"
+    )
+    parser.add_argument(
+        "--lora-val", type=int, default=200, help="LoRA val records (default: 200)"
+    )
+    parser.add_argument(
+        "--skip-lora", action="store_true", help="Skip LoRA chat data generation"
+    )
     return parser
 
 
