@@ -6,7 +6,7 @@ JUPYTER := $(VENV)/bin/jupyter
 DATA_DIR ?= data
 
 .PHONY: help venv install setup samples setup-samples setup-real download run \
-        dev check test smoke clean-data clean-caches clean
+        dev check test smoke validate render clean-data clean-caches clean
 
 help:
 	@echo "make setup          Install pinned dependencies and generate sample data"
@@ -15,6 +15,8 @@ help:
 	@echo "make setup-real     Download SNIPS, IMDB, Banking77, and WikiText"
 	@echo "make check          Run lint, notebook validation, and regression tests"
 	@echo "make smoke          Execute offline notebooks with reduced training"
+	@echo "make validate       Execute offline notebooks at full budget, enforcing sanity checks"
+	@echo "make render         Like validate, but save executed notebooks in rendered/ (with plots)"
 
 $(PYBIN):
 	$(PY) -c 'import sys; assert sys.version_info >= (3, 12), "Python 3.12+ required"'
@@ -60,6 +62,12 @@ test: dev
 
 smoke: dev
 	$(PYBIN) scripts/check_notebooks.py --execute --quick
+
+validate: dev
+	$(PYBIN) scripts/check_notebooks.py --execute
+
+render: dev
+	$(PYBIN) scripts/check_notebooks.py --execute --output-dir rendered
 
 clean-data:
 	rm -rf $(DATA_DIR)/imdb $(DATA_DIR)/snips $(DATA_DIR)/banking77 $(DATA_DIR)/wikitext

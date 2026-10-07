@@ -123,3 +123,12 @@ Thumbs.db
 # MLX specific
 *.npy
 *.metal
+
+# LoRA rank-sweep outputs and per-run configs written by notebook 08
+notebooks/adapters/rank_*/
+notebooks/adapters/lora_config.json
+notebooks/adapters/data_bare/
+notebooks/adapters/train.log
+
+# Executed notebook copies from `make render`
+rendered/
