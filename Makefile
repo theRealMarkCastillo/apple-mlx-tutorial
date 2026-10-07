@@ -1,79 +1,65 @@
-# Python 3.12+ on Apple Silicon. Override PY or VENV if needed.
-PY ?= python3
-VENV ?= .venv
-PYBIN := $(VENV)/bin/python
-JUPYTER := $(VENV)/bin/jupyter
+# uv manages Python (see .python-version), .venv, and the locked dependencies.
+UV ?= uv
 DATA_DIR ?= data
+RUN := $(UV) run --locked
 
-.PHONY: help venv install setup samples setup-samples setup-real download run \
-        dev check test smoke validate render clean-data clean-caches clean
+.PHONY: help install setup samples setup-samples setup-real download run \
+        dev lint check test smoke validate render clean-data clean-caches clean
 
 help:
-	@echo "make setup          Install pinned dependencies and generate sample data"
-	@echo "make run            Launch Jupyter (no reinstall when dependencies are unchanged)"
-	@echo "make setup-samples  Generate offline sample data only"
+	@echo "make setup          Sync locked dependencies and generate sample data"
+	@echo "make run            Launch Jupyter in the uv-managed environment"
+	@echo "make setup-samples  Generate sample data without installing dependencies"
 	@echo "make setup-real     Download SNIPS, IMDB, Banking77, and WikiText"
 	@echo "make check          Run lint, notebook validation, and regression tests"
 	@echo "make smoke          Execute offline notebooks with reduced training"
 	@echo "make validate       Execute offline notebooks at full budget, enforcing sanity checks"
-	@echo "make render         Like validate, but save executed notebooks in rendered/ (with plots)"
+	@echo "make render         Like validate, saving executed notebooks in rendered/"
 
-$(PYBIN):
-	$(PY) -c 'import sys; assert sys.version_info >= (3, 12), "Python 3.12+ required"'
-	$(PY) -m venv $(VENV)
+install dev:
+	$(UV) sync --locked
 
-venv: $(PYBIN)
-
-$(VENV)/.deps.stamp: requirements.txt $(PYBIN)
-	$(PYBIN) -c 'import sys; assert sys.version_info >= (3, 12), "Python 3.12+ required"'
-	$(PYBIN) -m ensurepip --upgrade
-	$(PYBIN) -m pip install -r requirements.txt
-	@touch $@
-
-install: $(VENV)/.deps.stamp
-
-samples setup-samples: venv
-	$(PYBIN) scripts/download_datasets.py --samples --data-dir "$(DATA_DIR)"
+# The sample generator uses only the standard library. --no-project avoids
+# downloading the ML stack and does not modify the project's environment.
+samples setup-samples:
+	$(UV) run --no-project --python "$(shell cat .python-version)" scripts/download_datasets.py --samples --data-dir "$(DATA_DIR)"
 
 setup: install samples
 	@echo "Setup complete. Run 'make run', then open 00_Overview.ipynb."
 
-run: install
-	$(JUPYTER) notebook --notebook-dir=notebooks
+run:
+	$(RUN) jupyter notebook --notebook-dir=notebooks
 
-setup-real: install
-	$(PYBIN) scripts/download_datasets.py --all --data-dir "$(DATA_DIR)"
+setup-real:
+	$(RUN) python scripts/download_datasets.py --all --data-dir "$(DATA_DIR)"
 
 download: setup-real
 
-$(VENV)/.dev.stamp: requirements-dev.txt $(VENV)/.deps.stamp
-	$(PYBIN) -m pip install -r requirements-dev.txt
-	@touch $@
+lint:
+	$(RUN) ruff check notebooks scripts tests
 
-dev: $(VENV)/.dev.stamp
+check: lint
+	$(RUN) python scripts/check_notebooks.py
+	$(RUN) python -m pytest -q
 
-check: dev
-	$(VENV)/bin/ruff check notebooks scripts tests --select F821,E9
-	$(PYBIN) scripts/check_notebooks.py
-	$(PYBIN) -m pytest -q
+test:
+	$(RUN) python -m pytest -q
 
-test: dev
-	$(PYBIN) -m pytest -q
+smoke:
+	$(RUN) python scripts/check_notebooks.py --execute --quick
 
-smoke: dev
-	$(PYBIN) scripts/check_notebooks.py --execute --quick
+validate:
+	$(RUN) python scripts/check_notebooks.py --execute
 
-validate: dev
-	$(PYBIN) scripts/check_notebooks.py --execute
-
-render: dev
-	$(PYBIN) scripts/check_notebooks.py --execute --output-dir rendered
+render:
+	$(RUN) python scripts/check_notebooks.py --execute --output-dir rendered
 
 clean-data:
-	rm -rf $(DATA_DIR)/imdb $(DATA_DIR)/snips $(DATA_DIR)/banking77 $(DATA_DIR)/wikitext
+	rm -rf -- "$(DATA_DIR)/imdb" "$(DATA_DIR)/snips" "$(DATA_DIR)/banking77" "$(DATA_DIR)/wikitext"
 
 clean-caches:
 	find notebooks scripts tests -type d -name __pycache__ -exec rm -rf {} +
+	rm -rf -- .pytest_cache .ruff_cache
 
 clean: clean-data clean-caches
-	rm -rf $(VENV)
+	rm -rf -- .venv

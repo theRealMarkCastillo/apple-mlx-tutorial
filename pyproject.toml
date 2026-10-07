@@ -1,0 +1,51 @@
+[project]
+name = "apple-mlx-tutorial"
+version = "0.1.0"
+description = "Hands-on NLP tutorials with Apple's MLX framework on Apple Silicon"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "mlx==0.32.3",
+    "mlx-lm[train]==0.32.0",
+    "numpy==2.5.3",
+    "scikit-learn==1.9.1",
+    "datasets==5.1.0",
+    "jupyter==1.1.1",
+    "notebook==7.6.3",
+    "matplotlib==3.11.2",
+    "seaborn==0.13.2",
+    "plotly==7.1.0",
+    "wordcloud==1.9.6",
+    "ipywidgets==8.1.9",
+    # Notebook 10 uses PyTorch through Sentence Transformers, not MLX.
+    "sentence-transformers==6.1.0",
+    "transformers==5.19.0",
+    "sentencepiece==0.2.2",
+    "protobuf==7.36.2",
+]
+
+[dependency-groups]
+dev = [
+    "pytest==9.1.1",
+    "nbformat==5.11.1",
+    "nbclient==0.11.0",
+    "ruff==0.16.10",
+]
+
+[tool.uv]
+# This is a notebook collection, not an installable Python package.
+package = false
+environments = ["sys_platform == 'darwin' and platform_machine == 'arm64'"]
+required-environments = ["sys_platform == 'darwin' and platform_machine == 'arm64'"]
+
+[tool.ruff]
+target-version = "py312"
+extend-exclude = ["rendered"]
+
+[tool.ruff.lint]
+# Preserve the tutorial's focused syntax/undefined-name checks.
+select = ["F821", "E9"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

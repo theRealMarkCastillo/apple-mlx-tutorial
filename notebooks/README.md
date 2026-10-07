@@ -1,7 +1,8 @@
 # MLX NLP notebooks: curriculum guide
 
-Python 3.12+, Apple Silicon, macOS 14+. From the repository root run
-`make setup` then `make run`, and open `00_Overview.ipynb`.
+Python 3.12+, Apple Silicon, macOS 14+. Install `uv` (see the root README).
+From the repository root run `make setup` then `make run`, and open
+`00_Overview.ipynb`. uv manages Python 3.13 and the locked environment.
 
 ## How these notebooks teach
 
@@ -39,7 +40,7 @@ notebook at full budget and fails if one of those claims stops being true.
 
 Notebooks **08** and **10** download pretrained models and are not part of
 `make smoke`/`make validate`; run them yourself, or use
-`python scripts/check_notebooks.py --execute --include-manual --notebook 08`.
+`uv run --locked python scripts/check_notebooks.py --execute --include-manual --notebook 08`.
 Optional cells (real datasets, the LoRA rank sweep, the needle-in-a-haystack
 test) are switched off or skip themselves when their data is missing.
 
@@ -76,7 +77,7 @@ the evaluation toolkit (`group_train_val_split`, `find_near_duplicates`,
 
 ## Troubleshooting
 
-* **Imports fail:** run notebooks through `make run` so they use `.venv`; `mlx_nlp_utils`
+* **Imports fail:** run notebooks through `make run` so they use uv's `.venv`; `mlx_nlp_utils`
   is imported from the `notebooks/` directory.
 * **A section says data is missing:** run `make setup-samples` (sample data) or
   `make setup-real` (real datasets).

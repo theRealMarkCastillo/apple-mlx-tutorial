@@ -1,21 +1,13 @@
 #!/usr/bin/env bash
-# Dataset Downloader (Shell Wrapper)
-# A convenient wrapper around download_datasets.py
-
+# Run the downloader in the repository's uv-managed environment from any cwd.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-PYTHON_SCRIPT="$SCRIPT_DIR/download_datasets.py"
+PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 
-if [ ! -f "$PYTHON_SCRIPT" ]; then
-    echo "ERROR: download_datasets.py not found at $PYTHON_SCRIPT" >&2
+if ! command -v uv >/dev/null 2>&1; then
+    echo "ERROR: uv is required. See https://docs.astral.sh/uv/getting-started/installation/" >&2
     exit 1
 fi
 
-if ! python3 -c "import datasets" &>/dev/null; then
-    echo "WARNING: 'datasets' library not installed." >&2
-    echo "Install it with: pip install datasets" >&2
-fi
-
-echo "📦 Running dataset downloader..."
-python3 "$PYTHON_SCRIPT" "$@"
+exec uv run --locked --project "$PROJECT_DIR" python "$SCRIPT_DIR/download_datasets.py" "$@"

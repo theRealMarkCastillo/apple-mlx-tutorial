@@ -6,9 +6,9 @@ Dataset Download Script
 Downloads and prepares datasets for NLP training.
 
 Usage:
-    python scripts/download_datasets.py --all
-    python scripts/download_datasets.py --imdb --snips
-    python scripts/download_datasets.py --sentiment
+    uv run --locked python scripts/download_datasets.py --all
+    uv run --locked python scripts/download_datasets.py --imdb --snips
+    uv run --locked python scripts/download_datasets.py --samples
 
 The ``--samples`` flag delegates to ``scripts/generate_synthetic_data.py`` so
 that there is exactly one canonical source of synthetic data in this repo.
@@ -346,7 +346,7 @@ def main() -> None:
             print(f"  • {f.name}")
 
     print("\nNext steps:")
-    print("  1. Start notebooks: cd notebooks && jupyter notebook")
+    print("  1. Start notebooks: run 'make run' from the repository root")
     print("  2. Open 00_Overview.ipynb to get started")
     print("  3. See notebooks/README.md for learning paths")
 

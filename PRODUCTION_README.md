@@ -9,9 +9,10 @@ learning evaluation technique, not performance claims. Timings depend on your ha
 
 ## Environment and checks
 
-Use Python 3.12+ on Apple Silicon with macOS 14 or later. Run `make setup`, then
-`make check` and `make smoke`. Direct dependency pins were refreshed on October 6,
-2026; see `requirements.txt`. Keep the installed dependency inventory, hardware,
+Use Python 3.12+ on Apple Silicon with macOS 14 or later. Install `uv`, then run
+`make setup`, `make check`, and `make smoke`. The default Python is 3.13 (see
+`.python-version`); `pyproject.toml` declares dependencies and `uv.lock` records
+their full resolution. Keep the lockfile, installed dependency inventory, hardware,
 random seeds, and data revision alongside any results you publish.
 
 The repository targets Metal on macOS. Upstream MLX also provides Linux CPU and
@@ -25,7 +26,7 @@ used by these notebooks.
 ```bash
 make setup-real
 # Or choose a dataset:
-.venv/bin/python scripts/download_datasets.py --imdb --max-samples 5000
+uv run --locked python scripts/download_datasets.py --imdb --max-samples 5000
 ```
 
 The downloader writes:
