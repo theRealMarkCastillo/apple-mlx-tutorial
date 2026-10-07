@@ -282,6 +282,7 @@ class DatasetDownloader:
         generate_synthetic_data.generate_sentiment_data(output_dir=str(self.data_dir))
         generate_synthetic_data.generate_text_corpus(output_dir=str(self.data_dir))
         generate_synthetic_data.generate_rag_knowledge_base(output_dir=str(self.data_dir))
+        generate_synthetic_data.generate_rag_eval_queries(output_dir=str(self.data_dir))
         generate_synthetic_data.generate_lora_chat_data(output_dir=str(self.data_dir))
 
 

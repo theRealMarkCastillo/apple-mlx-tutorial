@@ -213,6 +213,65 @@ def generate_rag_knowledge_base(output_dir: str = "data", seed: int = DEFAULT_SE
     return output_path
 
 
+# Labeled retrieval queries for notebooks 09 and 10. Each query names the index
+# of the one knowledge-base document that answers it. "lexical" queries reuse
+# the document's wording; "paraphrase" queries ask the same thing in other
+# words, which is where bag-of-words retrieval breaks down.
+RAG_EVAL_QUERIES: list[tuple[str, int, str]] = [
+    ("What is MLX?", 0, "lexical"),
+    ("Which library did Apple build for training models on Mac chips?", 0, "paraphrase"),
+    ("How does unified memory let the CPU and GPU share memory?", 1, "lexical"),
+    ("Do I have to copy tensors between the processor and graphics card on a Mac?", 1, "paraphrase"),
+    ("What is lazy evaluation in MLX?", 2, "lexical"),
+    ("Why isn't my array calculated until I print it?", 2, "paraphrase"),
+    ("Why are LSTMs hard to parallelize?", 3, "lexical"),
+    ("What is the drawback of recurrent nets that read one word at a time?", 3, "paraphrase"),
+    ("How do transformers use attention to process sequences in parallel?", 4, "lexical"),
+    ("Which architecture looks at every token at once instead of step by step?", 4, "paraphrase"),
+    ("What does LoRA do to pre-trained weights?", 5, "lexical"),
+    ("How can I adapt a big network by training only a few small extra matrices?", 5, "paraphrase"),
+    ("How does quantization reduce the precision of model weights?", 6, "lexical"),
+    ("How can I shrink a network so it needs less RAM?", 6, "paraphrase"),
+    ("What is RAG retrieval augmented generation?", 7, "lexical"),
+    ("How can a chatbot answer with facts newer than its training cutoff?", 7, "paraphrase"),
+    ("What do vector databases store?", 8, "lexical"),
+    ("How do I find documents that mean the same thing even with different words?", 8, "paraphrase"),
+    ("What is the Neural Engine NPU?", 9, "lexical"),
+    ("Which dedicated chip on a Mac speeds up inference?", 9, "paraphrase"),
+    ("Does MLX support automatic differentiation?", 10, "lexical"),
+    ("Can the framework compute gradients for me?", 10, "paraphrase"),
+    ("What is fine-tuning a pre-trained model?", 11, "lexical"),
+    ("How do I specialize an existing network for my own task?", 11, "paraphrase"),
+    ("What is prompt engineering?", 12, "lexical"),
+    ("How should I word my instructions to get better replies?", 12, "paraphrase"),
+    ("What is zero-shot learning?", 13, "lexical"),
+    ("Can a system handle a job it was never shown examples of?", 13, "paraphrase"),
+    ("What is few-shot learning?", 14, "lexical"),
+    ("Should I include a couple of worked examples in my request?", 14, "paraphrase"),
+    ("What is chain-of-thought prompting?", 15, "lexical"),
+    ("How do I get the assistant to show its working before answering?", 15, "paraphrase"),
+    ("What is hallucination in an LLM?", 16, "lexical"),
+    ("Why does the chatbot confidently make things up?", 16, "paraphrase"),
+    ("What does temperature control?", 17, "lexical"),
+    ("How do I make generated text less random?", 17, "paraphrase"),
+    ("What is top-k sampling?", 18, "lexical"),
+    ("How do I restrict generation to the few most probable candidates?", 18, "paraphrase"),
+    ("What is top-p nucleus sampling?", 19, "lexical"),
+    ("Which decoding method keeps the smallest set whose probabilities add up to a threshold?", 19, "paraphrase"),
+]
+
+
+def generate_rag_eval_queries(output_dir: str = "data") -> Path:
+    """Write labeled retrieval queries to ``rag_samples/eval_queries.json``."""
+    rows = [{"query": q, "relevant_doc": doc, "kind": kind} for q, doc, kind in RAG_EVAL_QUERIES]
+    output_path = Path(output_dir) / "rag_samples" / "eval_queries.json"
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(output_path, "w", encoding="utf-8") as f:
+        json.dump(rows, f, indent=2)
+    print(f"Saved {len(rows)} labeled retrieval queries to {output_path}")
+    return output_path
+
+
 # ---------------------------------------------------------------------------
 # LoRA chat-format data
 # ---------------------------------------------------------------------------
@@ -259,7 +318,7 @@ def generate_lora_chat_data(
     ``mlx_lm.lora`` expects out of the box) in OpenAI-style
     ``{"messages": [...]}`` format. The dataset is large enough to demonstrate
     the LoRA training mechanics end-to-end on Apple Silicon while still being
-    fast enough to finish in a few minutes on a 4-bit Llama-3.2 base model.
+    fast enough to finish in a few minutes on a 4-bit Qwen2.5 base model.
     """
     _seed_random(seed)
     print(f"Generating synthetic LoRA chat data ({n_train} train / {n_val} val)...")
@@ -342,6 +401,7 @@ def main() -> None:
     generate_sentiment_data(args.data_dir, seed=args.seed)
     generate_text_corpus(args.data_dir)
     generate_rag_knowledge_base(args.data_dir, seed=args.seed)
+    generate_rag_eval_queries(args.data_dir)
     if not args.skip_lora:
         generate_lora_chat_data(
             n_train=args.lora_train,

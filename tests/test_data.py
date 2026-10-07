@@ -50,3 +50,14 @@ def test_imdb_subset_shuffles_before_truncating(tmp_path, monkeypatch):
         data = json.loads((output / f'{split}.json').read_text())
         assert len(data['texts']) == 20
         assert set(data['labels']) == {0, 1}
+
+
+def test_rag_eval_queries_point_at_real_documents(tmp_path):
+    from scripts.generate_synthetic_data import generate_rag_eval_queries, generate_rag_knowledge_base
+    docs = json.loads(generate_rag_knowledge_base(output_dir=str(tmp_path)).read_text())
+    rows = json.loads(generate_rag_eval_queries(output_dir=str(tmp_path)).read_text())
+    assert len(rows) == 40
+    assert {r['kind'] for r in rows} == {'lexical', 'paraphrase'}
+    assert all(0 <= r['relevant_doc'] < len(docs) and not docs[r['relevant_doc']].startswith('Synthetic')
+               for r in rows)
+    assert len({r['query'] for r in rows}) == len(rows)

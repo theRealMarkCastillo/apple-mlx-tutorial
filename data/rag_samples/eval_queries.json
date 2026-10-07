@@ -1,0 +1,202 @@
+[
+  {
+    "query": "What is MLX?",
+    "relevant_doc": 0,
+    "kind": "lexical"
+  },
+  {
+    "query": "Which library did Apple build for training models on Mac chips?",
+    "relevant_doc": 0,
+    "kind": "paraphrase"
+  },
+  {
+    "query": "How does unified memory let the CPU and GPU share memory?",
+    "relevant_doc": 1,
+    "kind": "lexical"
+  },
+  {
+    "query": "Do I have to copy tensors between the processor and graphics card on a Mac?",
+    "relevant_doc": 1,
+    "kind": "paraphrase"
+  },
+  {
+    "query": "What is lazy evaluation in MLX?",
+    "relevant_doc": 2,
+    "kind": "lexical"
+  },
+  {
+    "query": "Why isn't my array calculated until I print it?",
+    "relevant_doc": 2,
+    "kind": "paraphrase"
+  },
+  {
+    "query": "Why are LSTMs hard to parallelize?",
+    "relevant_doc": 3,
+    "kind": "lexical"
+  },
+  {
+    "query": "What is the drawback of recurrent nets that read one word at a time?",
+    "relevant_doc": 3,
+    "kind": "paraphrase"
+  },
+  {
+    "query": "How do transformers use attention to process sequences in parallel?",
+    "relevant_doc": 4,
+    "kind": "lexical"
+  },
+  {
+    "query": "Which architecture looks at every token at once instead of step by step?",
+    "relevant_doc": 4,
+    "kind": "paraphrase"
+  },
+  {
+    "query": "What does LoRA do to pre-trained weights?",
+    "relevant_doc": 5,
+    "kind": "lexical"
+  },
+  {
+    "query": "How can I adapt a big network by training only a few small extra matrices?",
+    "relevant_doc": 5,
+    "kind": "paraphrase"
+  },
+  {
+    "query": "How does quantization reduce the precision of model weights?",
+    "relevant_doc": 6,
+    "kind": "lexical"
+  },
+  {
+    "query": "How can I shrink a network so it needs less RAM?",
+    "relevant_doc": 6,
+    "kind": "paraphrase"
+  },
+  {
+    "query": "What is RAG retrieval augmented generation?",
+    "relevant_doc": 7,
+    "kind": "lexical"
+  },
+  {
+    "query": "How can a chatbot answer with facts newer than its training cutoff?",
+    "relevant_doc": 7,
+    "kind": "paraphrase"
+  },
+  {
+    "query": "What do vector databases store?",
+    "relevant_doc": 8,
+    "kind": "lexical"
+  },
+  {
+    "query": "How do I find documents that mean the same thing even with different words?",
+    "relevant_doc": 8,
+    "kind": "paraphrase"
+  },
+  {
+    "query": "What is the Neural Engine NPU?",
+    "relevant_doc": 9,
+    "kind": "lexical"
+  },
+  {
+    "query": "Which dedicated chip on a Mac speeds up inference?",
+    "relevant_doc": 9,
+    "kind": "paraphrase"
+  },
+  {
+    "query": "Does MLX support automatic differentiation?",
+    "relevant_doc": 10,
+    "kind": "lexical"
+  },
+  {
+    "query": "Can the framework compute gradients for me?",
+    "relevant_doc": 10,
+    "kind": "paraphrase"
+  },
+  {
+    "query": "What is fine-tuning a pre-trained model?",
+    "relevant_doc": 11,
+    "kind": "lexical"
+  },
+  {
+    "query": "How do I specialize an existing network for my own task?",
+    "relevant_doc": 11,
+    "kind": "paraphrase"
+  },
+  {
+    "query": "What is prompt engineering?",
+    "relevant_doc": 12,
+    "kind": "lexical"
+  },
+  {
+    "query": "How should I word my instructions to get better replies?",
+    "relevant_doc": 12,
+    "kind": "paraphrase"
+  },
+  {
+    "query": "What is zero-shot learning?",
+    "relevant_doc": 13,
+    "kind": "lexical"
+  },
+  {
+    "query": "Can a system handle a job it was never shown examples of?",
+    "relevant_doc": 13,
+    "kind": "paraphrase"
+  },
+  {
+    "query": "What is few-shot learning?",
+    "relevant_doc": 14,
+    "kind": "lexical"
+  },
+  {
+    "query": "Should I include a couple of worked examples in my request?",
+    "relevant_doc": 14,
+    "kind": "paraphrase"
+  },
+  {
+    "query": "What is chain-of-thought prompting?",
+    "relevant_doc": 15,
+    "kind": "lexical"
+  },
+  {
+    "query": "How do I get the assistant to show its working before answering?",
+    "relevant_doc": 15,
+    "kind": "paraphrase"
+  },
+  {
+    "query": "What is hallucination in an LLM?",
+    "relevant_doc": 16,
+    "kind": "lexical"
+  },
+  {
+    "query": "Why does the chatbot confidently make things up?",
+    "relevant_doc": 16,
+    "kind": "paraphrase"
+  },
+  {
+    "query": "What does temperature control?",
+    "relevant_doc": 17,
+    "kind": "lexical"
+  },
+  {
+    "query": "How do I make generated text less random?",
+    "relevant_doc": 17,
+    "kind": "paraphrase"
+  },
+  {
+    "query": "What is top-k sampling?",
+    "relevant_doc": 18,
+    "kind": "lexical"
+  },
+  {
+    "query": "How do I restrict generation to the few most probable candidates?",
+    "relevant_doc": 18,
+    "kind": "paraphrase"
+  },
+  {
+    "query": "What is top-p nucleus sampling?",
+    "relevant_doc": 19,
+    "kind": "lexical"
+  },
+  {
+    "query": "Which decoding method keeps the smallest set whose probabilities add up to a threshold?",
+    "relevant_doc": 19,
+    "kind": "paraphrase"
+  }
+]
