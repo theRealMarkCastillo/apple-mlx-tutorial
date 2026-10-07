@@ -167,3 +167,58 @@ def test_nanogpt_cannot_attend_to_future_and_batches_are_shifted():
     np.testing.assert_allclose(np.array(a[:, :2]), np.array(b[:, :2]), atol=1e-5)
     x, y = ns['get_batch'](mx.arange(40), block_size=5, batch_size=3)
     np.testing.assert_array_equal(np.array(x + 1), np.array(y))
+
+
+# ---- evaluation helpers and tokenizer -------------------------------------
+
+from notebooks.mlx_nlp_utils import (
+    bootstrap_ci, clean_holdout_slice, copied_fraction, create_vocabulary,
+    find_near_duplicates, group_train_val_split, majority_baseline_accuracy,
+    pad_sequences, texts_to_sequences, tokenize,
+)
+
+
+def test_tokenizer_is_shared_by_training_and_inference():
+    assert tokenize("Hello there! What's up?") == ['hello', 'there', "what's", 'up']
+    _, w2i = create_vocabulary(["turn on the lights"])
+    # Punctuation must not turn a known word into <UNK>.
+    ids = texts_to_sequences(["Lights!"], w2i)[0]
+    assert ids == [w2i['lights']] and w2i['<UNK>'] not in ids
+    assert pad_sequences([[2, 3]], 4).tolist() == [[2, 3, 0, 0]]
+
+
+def test_group_split_keeps_groups_together_and_is_deterministic():
+    items = list(range(12))
+    groups = [i // 3 for i in items]
+    train, val = group_train_val_split(items, groups, val_fraction=0.25, seed=1)
+    assert sorted(train + val) == items
+    assert {groups[i] for i in train}.isdisjoint({groups[i] for i in val})
+    assert (train, val) == group_train_val_split(items, groups, val_fraction=0.25, seed=1)
+    with pytest.raises(ValueError):
+        group_train_val_split([1, 2], [1], 0.5)
+
+
+def test_near_duplicates_find_decorated_copies_but_not_single_words():
+    train = ["turn on the lights", "hey", "what time is it"]
+    val = ["please turn on the lights", "hey call john", "play music"]
+    assert find_near_duplicates(train, val) == [("please turn on the lights", "turn on the lights")]
+
+
+def test_majority_baseline_and_bootstrap_interval():
+    assert majority_baseline_accuracy([0, 0, 1], [0, 1, 0, 0]) == 0.75
+    acc, low, high = bootstrap_ci([1] * 8 + [0] * 2)
+    assert acc == 0.8 and low <= acc <= high
+    assert bootstrap_ci([1, 1, 1, 1]) == (1.0, 1.0, 1.0)
+    with pytest.raises(ValueError):
+        bootstrap_ci([])
+
+
+def test_clean_holdout_slice_avoids_repeated_text():
+    import random
+    rng = random.Random(0)
+    fresh = lambda n: "".join(rng.choice("abcdefghijklmnopqrstuvwxyz") for _ in range(n))
+    head = fresh(200)
+    text = head + fresh(200) + head + fresh(200)          # the last-but-one block repeats the first
+    start, end = clean_holdout_slice(text, n_slices=4, n=10)
+    assert copied_fraction(text[start:end], text[:start] + "\0" + text[end:], 10) < 0.2
+    assert copied_fraction(text[:200], text[200:], 10) > 0.9   # the repeated block really is copied

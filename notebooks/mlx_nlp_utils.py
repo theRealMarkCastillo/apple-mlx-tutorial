@@ -1,12 +1,16 @@
 """
-MLX NLP Utilities - Complete Implementation
-All model classes and utility functions in one file for notebooks.
-This consolidates intent_classifier.py, sentiment_analysis.py, and text_generator.py
+Shared helpers for the MLX NLP notebooks.
+
+Model classes, the compiled training loop, tokenization, and the small
+evaluation toolkit (baselines, leak checks, confidence intervals) live here so
+each notebook can focus on one idea. Every function is short enough to read;
+the notebooks point here when they use one.
 """
 
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 import mlx.core as mx
@@ -19,6 +23,7 @@ _PAD_IDX = 0
 _UNK_IDX = 1
 _CHAR_PAD = "<PAD>"
 _CHAR_UNK = "<UNK>"
+_STRIP_CHARS = ".,!?;:\"()"
 
 
 # ============================================================================
@@ -103,30 +108,39 @@ def last_non_padding(hidden: mx.array, tokens: mx.array) -> mx.array:
     return mx.where(lengths[:, None] > 0, selected, mx.zeros_like(selected))
 
 
+def tokenize(text: str) -> list[str]:
+    """Lowercase, replace common punctuation with spaces, and split on whitespace.
+
+    Training and prediction must share one tokenizer: otherwise ``"amazing!"``
+    at inference time is a different token from ``"amazing"`` in training and
+    silently becomes ``<UNK>``. Apostrophes are kept (``"what's"``).
+
+    >>> tokenize("Hello there! What's up?")
+    ['hello', 'there', "what's", 'up']
+    """
+    text = text.lower()
+    for char in _STRIP_CHARS:
+        text = text.replace(char, " ")
+    return text.split()
+
+
+# Backwards-compatible name used by earlier versions of the notebooks.
+preprocess_text = tokenize
+
+
 def create_vocabulary(texts: list[str]) -> tuple[dict[str, int], dict[str, int]]:
     """Build a word vocabulary with reserved ``<PAD>=0`` and ``<UNK>=1``.
 
-    Returns ``(vocab, word_to_idx)`` — both dicts share the same entries but are
-    returned separately to mirror the symmetric vocabulary / index mapping used
-    by ``texts_to_sequences`` and the pipeline notebooks. ``vocab`` documents
-    what was learned; ``word_to_idx`` is the lookup used at train/inference.
+    Returns ``(vocab, word_to_idx)``. The two dicts have identical contents;
+    both are returned for compatibility with earlier notebook code. Fit the
+    vocabulary on training texts only, so validation words can be unknown.
     """
     vocab = {"<PAD>": _PAD_IDX, "<UNK>": _UNK_IDX}
     for text in texts:
-        for word in text.lower().split():
+        for word in tokenize(text):
             if word not in vocab:
                 vocab[word] = len(vocab)
-    # vocab and word_to_idx map the same keys to the same indices, so a
-    # shallow dict copy is the right semantics here.
     return vocab, dict(vocab)
-
-
-def preprocess_text(text: str) -> list[str]:
-    """Lowercase text and strip common punctuation, returning whitespace tokens."""
-    text = text.lower()
-    for char in ".,!?;:":
-        text = text.replace(char, " ")
-    return text.split()
 
 
 def train_val_split(
@@ -141,7 +155,7 @@ def train_val_split(
 
     >>> train, val = train_val_split([0, 1, 2, 3, 4], val_fraction=0.4, seed=0)
     >>> sorted(train), sorted(val)
-    ([0, 2, 3], [1, 4])
+    ([2, 3, 4], [0, 1])
     """
     if not 0.0 < val_fraction < 1.0:
         raise ValueError(f"val_fraction must be in (0, 1); got {val_fraction}")
@@ -156,16 +170,106 @@ def train_val_split(
     return [items[i] for i in train_idx], [items[i] for i in val_idx]
 
 
+def group_train_val_split(
+    items: list,
+    groups: list,
+    val_fraction: float = 0.2,
+    seed: int = 0,
+) -> tuple[list, list]:
+    """Split so every item with the same group key lands on the same side.
+
+    Use this when the data contains near-duplicates (``"turn on the lights"``
+    and ``"please turn on the lights"``). A plain random split puts one in
+    training and the other in validation, which rewards memorization.
+    Roughly ``val_fraction`` of the *groups* are held out.
+    """
+    if len(items) != len(groups):
+        raise ValueError("items and groups must have equal lengths")
+    unique = list(dict.fromkeys(groups))
+    train_groups, val_groups = train_val_split(unique, val_fraction, seed)
+    val_set = set(val_groups)
+    train = [item for item, g in zip(items, groups) if g not in val_set]
+    val = [item for item, g in zip(items, groups) if g in val_set]
+    return train, val
+
+
+def find_near_duplicates(
+    train_texts: list[str],
+    val_texts: list[str],
+    min_tokens: int = 2,
+) -> list[tuple[str, str]]:
+    """Return ``(val_text, train_text)`` pairs where one token sequence contains the other.
+
+    This catches the most common synthetic-data leak: a validation example
+    that is a training example plus or minus a word or two. The shorter text
+    must have at least ``min_tokens`` tokens, so a lone ``"hey"`` does not
+    match every sentence that starts with it.
+    """
+    def padded(text: str) -> str:
+        return " " + " ".join(tokenize(text)) + " "
+
+    train = [(t, padded(t), len(tokenize(t))) for t in train_texts]
+    pairs = []
+    for v in val_texts:
+        pv, nv = padded(v), len(tokenize(v))
+        for t, pt, nt in train:
+            if min(nv, nt) >= min_tokens and (pv in pt or pt in pv):
+                pairs.append((v, t))
+                break
+    return pairs
+
+
+def majority_baseline_accuracy(y_train, y_val) -> float:
+    """Accuracy of always predicting the most frequent training label."""
+    y_train, y_val = np.asarray(y_train).tolist(), np.asarray(y_val).tolist()
+    if not y_train or not y_val:
+        raise ValueError("Both label lists must be nonempty")
+    majority = max(set(y_train), key=y_train.count)
+    return sum(y == majority for y in y_val) / len(y_val)
+
+
+def bootstrap_ci(correct, n_boot: int = 2000, alpha: float = 0.05, seed: int = 0) -> tuple[float, float, float]:
+    """Return ``(accuracy, low, high)``: a percentile bootstrap interval.
+
+    ``correct`` is a sequence of 0/1 outcomes. With 24 validation examples
+    every example moves accuracy by about four points, and the interval makes
+    that uncertainty visible.
+    """
+    correct = np.asarray(correct, dtype=float)
+    if correct.size == 0:
+        raise ValueError("correct must be nonempty")
+    rng = np.random.default_rng(seed)
+    samples = rng.choice(correct, size=(n_boot, correct.size), replace=True).mean(axis=1)
+    low, high = np.quantile(samples, [alpha / 2, 1 - alpha / 2])
+    return float(correct.mean()), float(low), float(high)
+
+
+def count_parameters(model: nn.Module) -> int:
+    """Total number of trainable scalars in an MLX module."""
+    from mlx.utils import tree_flatten
+
+    return sum(p.size for _, p in tree_flatten(model.trainable_parameters()))
+
+
+def sanity_check(condition: bool, message: str) -> None:
+    """Assert a teaching claim when notebooks run with their full training budget.
+
+    ``make validate`` executes notebooks and fails if, for example, a model
+    does not beat the majority baseline. Quick smoke runs train for a single
+    epoch, so they only print a warning.
+    """
+    if condition:
+        print(f"✅ {message}")
+    elif os.environ.get("MLX_TUTORIAL_QUICK"):
+        print(f"⚠️  (quick run, not enforced) {message}")
+    else:
+        raise AssertionError(message)
+
+
 def texts_to_sequences(texts: list[str], word_to_idx: dict) -> list[list[int]]:
     """Convert texts to lists of vocabulary indices, mapping unknowns to <UNK>."""
-    sequences = []
-    for text in texts:
-        seq = [
-            word_to_idx[word] if word in word_to_idx else word_to_idx["<UNK>"]
-            for word in text.lower().split()
-        ]
-        sequences.append(seq)
-    return sequences
+    unk = word_to_idx["<UNK>"]
+    return [[word_to_idx.get(word, unk) for word in tokenize(text)] for text in texts]
 
 
 def pad_sequences(sequences: list[list[int]], max_len: int) -> np.ndarray:
@@ -305,6 +409,21 @@ def train_model(
     return model, history
 
 
+def predict_proba(model, text: str, word_to_idx: dict, max_len: int) -> np.ndarray:
+    """Class probabilities for one text, using the shared tokenizer."""
+    if hasattr(model, "eval"):
+        model.eval()
+    X = mx.array(pad_sequences(texts_to_sequences([text], word_to_idx), max_len))
+    return np.array(mx.softmax(model(X), axis=-1)[0])
+
+
+def predict_label(model, text: str, word_to_idx: dict, label_names: list[str], max_len: int) -> tuple[str, float]:
+    """Return ``(label, confidence)`` for one text."""
+    probs = predict_proba(model, text, word_to_idx, max_len)
+    pred_idx = int(probs.argmax())
+    return label_names[pred_idx], float(probs[pred_idx])
+
+
 def predict_intent(
     model,
     text: str,
@@ -313,21 +432,7 @@ def predict_intent(
     max_len: int,
 ) -> tuple[str, float]:
     """Predict the intent for a single text."""
-    if hasattr(model, "eval"):
-        model.eval()
-    tokens = [
-        word_to_idx[word] if word in word_to_idx else word_to_idx["<UNK>"]
-        for word in text.lower().split()
-    ]
-    tokens = tokens[:max_len] + [_PAD_IDX] * (max_len - len(tokens))
-
-    X = mx.array([tokens])
-    logits = model(X)
-    probs = mx.softmax(logits, axis=-1)[0]
-    pred_idx = int(mx.argmax(probs))
-    confidence = float(probs[pred_idx])
-
-    return intent_names[pred_idx], confidence
+    return predict_label(model, text, word_to_idx, intent_names, max_len)
 
 
 # ============================================================================
@@ -342,11 +447,12 @@ class SentimentLSTM(nn.Module):
     (which ``predict_*`` helpers trigger via ``model.eval()``).
     """
 
-    def __init__(self, vocab_size: int, embedding_dim: int, hidden_size: int, output_size: int):
+    def __init__(self, vocab_size: int, embedding_dim: int, hidden_size: int, output_size: int,
+                 dropout: float = 0.3):
         super().__init__()
         self.embedding = nn.Embedding(vocab_size, embedding_dim)
         self.lstm = nn.LSTM(embedding_dim, hidden_size)
-        self.dropout = nn.Dropout(0.3)
+        self.dropout = nn.Dropout(dropout)
         self.linear = nn.Linear(hidden_size, output_size)
 
     def __call__(self, x: mx.array) -> mx.array:
@@ -366,21 +472,7 @@ def predict_sentiment(
     max_len: int,
 ) -> tuple[str, float]:
     """Predict the sentiment for a single text."""
-    if hasattr(model, "eval"):
-        model.eval()
-    tokens = [
-        word_to_idx[word] if word in word_to_idx else word_to_idx["<UNK>"]
-        for word in text.lower().split()
-    ]
-    tokens = tokens[:max_len] + [_PAD_IDX] * (max_len - len(tokens))
-
-    X = mx.array([tokens])
-    logits = model(X)
-    probs = mx.softmax(logits, axis=-1)[0]
-    pred_idx = int(mx.argmax(probs))
-    confidence = float(probs[pred_idx])
-
-    return sentiment_names[pred_idx], confidence
+    return predict_label(model, text, word_to_idx, sentiment_names, max_len)
 
 
 # ============================================================================
@@ -436,6 +528,27 @@ def text_to_sequences(
         y.append(char_to_idx.get(seq_out, _UNK_IDX))
 
     return np.array(X, dtype=np.int32), np.array(y, dtype=np.int32)
+
+
+def copied_fraction(held_out: str, rest: str, n: int = 20) -> float:
+    """Fraction of ``n``-character substrings of ``held_out`` that also occur in ``rest``."""
+    grams = [held_out[i:i + n] for i in range(len(held_out) - n)]
+    if not grams:
+        raise ValueError("held_out must be longer than n")
+    return sum(g in rest for g in grams) / len(grams)
+
+
+def clean_holdout_slice(text: str, n_slices: int = 10, n: int = 20) -> tuple[int, int]:
+    """Return ``(start, end)`` of the latest slice whose text is least copied elsewhere.
+
+    Notebook 03 explains why: a chronological "last 10%" split can contain a
+    paragraph that also appears in training, which makes validation
+    perplexity look far better than it is.
+    """
+    bounds = [(k * len(text) // n_slices, (k + 1) * len(text) // n_slices) for k in range(n_slices)]
+    scores = [round(copied_fraction(text[s:e], text[:s] + "\0" + text[e:], n), 2) for s, e in bounds]
+    best = min(range(n_slices), key=lambda k: (scores[k], -k))
+    return bounds[best]
 
 
 def generate_text(
@@ -523,7 +636,7 @@ def load_sample_intent_data() -> tuple[list[str], list[str], dict[str, int], dic
     data_path = _find_data_file("intent_samples/data.json")
 
     if data_path:
-        print(f"Loading intent data from {data_path}")
+        print("Loading intent data from data/intent_samples/data.json")
         with open(data_path, "r", encoding="utf-8") as f:
             data = json.load(f)
         texts = data["texts"]
@@ -552,7 +665,7 @@ def load_sample_sentiment_data() -> tuple[list[str], list[str], dict[str, int], 
     data_path = _find_data_file("sentiment_samples/data.json")
 
     if data_path:
-        print(f"Loading sentiment data from {data_path}")
+        print("Loading sentiment data from data/sentiment_samples/data.json")
         with open(data_path, "r", encoding="utf-8") as f:
             data = json.load(f)
         texts = data["texts"]
@@ -578,7 +691,7 @@ def load_sample_corpus() -> tuple[str, dict[str, int], dict[int, str]]:
     data_path = _find_data_file("text_gen_samples/corpus.txt")
 
     if data_path:
-        print(f"Loading corpus from {data_path}")
+        print("Loading corpus from data/text_gen_samples/corpus.txt")
         with open(data_path, "r", encoding="utf-8") as f:
             corpus = f.read()
     else:
@@ -589,12 +702,40 @@ def load_sample_corpus() -> tuple[str, dict[str, int], dict[int, str]]:
     return corpus, char_to_idx, idx_to_char
 
 
+def load_real_dataset(name: str):
+    """Load a dataset downloaded by ``make setup-real`` (``imdb``, ``snips``, ``banking77``).
+
+    Returns ``(train_texts, train_labels, test_texts, test_labels)``, or
+    ``None`` when the download is missing so notebooks can skip the section.
+    """
+    paths = [_find_data_file(f"{name}/{split}.json") for split in ("train", "test")]
+    if not all(paths):
+        print(f"{name} not found. Download it with: python scripts/download_datasets.py --{name}")
+        return None
+    splits = []
+    for path in paths:
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        splits += [data["texts"], data["labels"]]
+    print(f"Loaded {name}: {len(splits[0]):,} train / {len(splits[2]):,} test examples")
+    return tuple(splits)
+
+
+def load_rag_eval_queries() -> list[dict]:
+    """Load labeled retrieval queries: ``{"query", "relevant_doc", "kind"}``."""
+    data_path = _find_data_file("rag_samples/eval_queries.json")
+    if data_path is None:
+        raise FileNotFoundError("Run `make setup-samples` to create rag_samples/eval_queries.json")
+    with open(data_path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
 def load_rag_knowledge_base() -> list[str]:
     """Load the sample RAG knowledge base."""
     data_path = _find_data_file("rag_samples/knowledge_base.json")
 
     if data_path:
-        print(f"Loading knowledge base from {data_path}")
+        print("Loading knowledge base from data/rag_samples/knowledge_base.json")
         with open(data_path, "r", encoding="utf-8") as f:
             documents = json.load(f)
     else:
