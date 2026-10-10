@@ -225,3 +225,16 @@ output directory. For custom Python/environment locations, use uv's
 ## License
 
 For educational and demonstration purposes.
+
+## Local configuration and generated files
+
+The following files are local-only and ignored by Git:
+
+- `.agents/hooks.json`
+- `.claude/settings.json`
+- `.codex/hooks.json`
+- `.entire/settings.json`
+
+Before pulling the commit that untracks them, back up any configured copies
+outside the checkout. Git may remove the formerly tracked files during the
+update; restore your copies afterward. Do not force-add them.

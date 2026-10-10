@@ -137,3 +137,9 @@ rendered/
 # Reproducibility records and generated instruction-tuning data
 results/
 notebooks/adapters/data_instructed/
+
+# Keep machine-specific configuration and generated local artifacts out of Git.
+/.agents/*.json
+/.claude/*.json
+/.codex/*.json
+/.entire/*.json
